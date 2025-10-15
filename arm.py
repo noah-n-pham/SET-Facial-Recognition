@@ -57,9 +57,13 @@ while True:
                 (0, 255, 0),
                 2
             )
+        annotated_frame = r.plot()  # returns frame with boxes/labels drawn
 
-    # Display the result
-    print(x1, y1, x2, y2)
+        # Display the annotated frame
+        cv2.imshow("YOLOv8 Real-Time", annotated_frame)
+
+        # Display the result
+        print(x1, y1, x2, y2)
 
     # Press 'q' to quit
     if cv2.waitKey(1) & 0xFF == ord("q"):

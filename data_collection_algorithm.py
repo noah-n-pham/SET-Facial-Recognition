@@ -49,7 +49,7 @@ def rotate_image(img, angle):
     cos = abs(M[0, 0])
     sin = abs(M[0, 1])
     nW = int(((h * sin) + (w * cos)) * percentage)
-    nH = int(((h * cos) + (w * sin))* percentage)
+    nH = int(((h * cos) + (w * sin)) * percentage)
     M[0, 2] += (nW / 2) - center[0]
     M[1, 2] += (nH / 2) - center[1]
     return cv2.warpAffine(img, M, (nW, nH))
@@ -61,7 +61,7 @@ if not os.path.exists(asset_zip_path):
 # ====================================================================
 
 
-s = 0
+s = 1
 if len(sys.argv) > 1:
     s = sys.argv[1]
 
@@ -77,6 +77,7 @@ dimentions = [0, 0]
 
 width = 224
 height = 224
+
 
 def face_detection(source, image_name=None):
     in_width = 300
@@ -113,23 +114,20 @@ def face_detection(source, image_name=None):
         x_bottom_right = int(detections[0, 0, 0, 5] * frame_width)
         y_bottom_right = int(detections[0, 0, 0, 6] * frame_height)
 
-        x_offset = (int) ((ofset/100) * (x_bottom_right - x_top_left))
-        y_offset = (int) ((ofset/100) * (y_bottom_right - y_top_left))
+        x_offset = (int)((ofset/100) * (x_bottom_right - x_top_left))
+        y_offset = (int)((ofset/100) * (y_bottom_right - y_top_left))
 
         x_top_left -= x_offset
         x_bottom_right += x_offset
         y_top_left -= y_offset
         y_bottom_right += y_offset
 
-        
         if (image_name != None):
             image = frame[y_top_left:y_bottom_right, x_top_left:x_bottom_right]
             image = cv2.resize(image, (width, height))
             cv2.imwrite(image_name, image)
             dimentions[0] = x_bottom_right - x_top_left
             dimentions[1] = y_bottom_right - y_top_left
-            
-        
 
         cv2.rectangle(frame, (x_top_left, y_top_left),
                       (x_bottom_right, y_bottom_right), (0, 255, 0))
@@ -168,7 +166,7 @@ i = 0
 nameDict = {}
 name = input("Enter file name: ")
 nameDict[name] = i
-folderName = "Dataset"
+folderName = "Dataset/hoek"
 while True:
     face_detection(source)
 
@@ -181,9 +179,9 @@ while True:
         i = nameDict[name] if name in nameDict else 0
     elif key == 32:
         face_detection(source, folderName + "/"+name+"_" + str(i) + ".png")
-        image = cv2.imread(folderName+ "/"+name+"_" + str(i) + ".png")
+        image = cv2.imread(folderName + "/"+name+"_" + str(i) + ".png")
         print(image.shape)
-        #image = cv2.resize(image, (300, 300))
+        # image = cv2.resize(image, (300, 300))
         cv2.imwrite(folderName + "/"+name+"_" + str(i + 1) +
                     ".png", rotate_image(image, 22))
         cv2.imwrite(folderName + "/"+name+"_" + str(i + 2) + ".png",
@@ -192,7 +190,7 @@ while True:
                     cv2.convertScaleAbs(image, alpha=0.6, beta=0))
         cv2.imwrite(folderName + "/"+name+"_" + str(i + 4) + ".png",
                     cv2.GaussianBlur(image, (11, 11), 0))
-        i += 6
+        i += 5
         nameDict[name] = i
 
         # cv2.imwrite()

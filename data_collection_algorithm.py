@@ -42,13 +42,14 @@ def rotated_dimensions(width, height, angle_degrees):
 
 
 def rotate_image(img, angle):
+    percentage = 0.7
     (h, w) = img.shape[:2]
     center = (w // 2, h // 2)
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
     cos = abs(M[0, 0])
     sin = abs(M[0, 1])
-    nW = int((h * sin) + (w * cos))
-    nH = int((h * cos) + (w * sin))
+    nW = int(((h * sin) + (w * cos)) * percentage)
+    nH = int(((h * cos) + (w * sin))* percentage)
     M[0, 2] += (nW / 2) - center[0]
     M[1, 2] += (nH / 2) - center[1]
     return cv2.warpAffine(img, M, (nW, nH))
@@ -74,12 +75,16 @@ net = cv2.dnn.readNetFromCaffe(
 centerCoordinates = (0, 0)
 dimentions = [0, 0]
 
+width = 224
+height = 224
 
 def face_detection(source, image_name=None):
     in_width = 300
     in_height = 300
     mean = [104, 117, 123]
     conf_threshold = 0.4
+
+    image = None
 
     has_frame, frame = source.read()
     if not has_frame:
@@ -102,18 +107,29 @@ def face_detection(source, image_name=None):
 
     confidence = detections[0, 0, 0, 2]
     if confidence > conf_threshold:
+        ofset = 10
         x_top_left = int(detections[0, 0, 0, 3] * frame_width)
         y_top_left = int(detections[0, 0, 0, 4] * frame_height)
         x_bottom_right = int(detections[0, 0, 0, 5] * frame_width)
         y_bottom_right = int(detections[0, 0, 0, 6] * frame_height)
 
-        image = None
+        x_offset = (int) ((ofset/100) * (x_bottom_right - x_top_left))
+        y_offset = (int) ((ofset/100) * (y_bottom_right - y_top_left))
+
+        x_top_left -= x_offset
+        x_bottom_right += x_offset
+        y_top_left -= y_offset
+        y_bottom_right += y_offset
+
+        
         if (image_name != None):
             image = frame[y_top_left:y_bottom_right, x_top_left:x_bottom_right]
+            image = cv2.resize(image, (width, height))
             cv2.imwrite(image_name, image)
             dimentions[0] = x_bottom_right - x_top_left
             dimentions[1] = y_bottom_right - y_top_left
-        image_copy = image
+            
+        
 
         cv2.rectangle(frame, (x_top_left, y_top_left),
                       (x_bottom_right, y_bottom_right), (0, 255, 0))
@@ -136,7 +152,7 @@ def face_detection(source, image_name=None):
                int((y_top_left + y_bottom_right)/2)), 5, (255, 0, 0), -1)
     cv2.imshow(win_name, frame)
     # centerCoordinates = (int((x_top_left + x_bottom_right)/2), int((y_top_left + y_bottom_right)/2))
-    return image_copy
+    return image
 
 
 def get_coordinates():
@@ -152,7 +168,7 @@ i = 0
 nameDict = {}
 name = input("Enter file name: ")
 nameDict[name] = i
-
+folderName = "Dataset"
 while True:
     face_detection(source)
 
@@ -164,15 +180,17 @@ while True:
         name = input("Enter file name: ")
         i = nameDict[name] if name in nameDict else 0
     elif key == 32:
-        face_detection(source, "test/"+name+"_" + str(i) + ".png")
-        image = cv2.imread("test/"+name+"_" + str(i) + ".png")
-        cv2.imwrite("test/"+name+"_" + str(i + 1) +
+        face_detection(source, folderName + "/"+name+"_" + str(i) + ".png")
+        image = cv2.imread(folderName+ "/"+name+"_" + str(i) + ".png")
+        print(image.shape)
+        #image = cv2.resize(image, (300, 300))
+        cv2.imwrite(folderName + "/"+name+"_" + str(i + 1) +
                     ".png", rotate_image(image, 22))
-        cv2.imwrite("test/"+name+"_" + str(i + 2) + ".png",
+        cv2.imwrite(folderName + "/"+name+"_" + str(i + 2) + ".png",
                     cv2.convertScaleAbs(image, alpha=1.5, beta=0))
-        cv2.imwrite("test/"+name+"_" + str(i + 3) + ".png",
+        cv2.imwrite(folderName + "/"+name+"_" + str(i + 3) + ".png",
                     cv2.convertScaleAbs(image, alpha=0.6, beta=0))
-        cv2.imwrite("test/"+name+"_" + str(i + 4) + ".png",
+        cv2.imwrite(folderName + "/"+name+"_" + str(i + 4) + ".png",
                     cv2.GaussianBlur(image, (11, 11), 0))
         i += 6
         nameDict[name] = i

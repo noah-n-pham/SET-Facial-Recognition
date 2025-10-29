@@ -5,10 +5,10 @@ import albumentations as A
 import cv2
 import numpy as np
 
-# nameList = ["tyler", "ben", "james", "rishab",
-#             "noah", "joyce", "nate", "janav", "hoek"]
+nameList = ["tyler", "ben", "james", "rishab",
+            "noah", "joyce", "nate", "janav", "hoek"]
 
-nameList = ["tyler", "ben"]
+# nameList = ["tyler", "ben"]
 
 transform = A.Compose([
     A.HorizontalFlip(p=0.5),

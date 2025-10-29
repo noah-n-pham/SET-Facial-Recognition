@@ -5,22 +5,47 @@ import albumentations as A
 import cv2
 import numpy as np
 
-nameList = ["tyler","ben","james","rishab","noah","joyce","nate","janav","hoek"]
+# nameList = ["tyler", "ben", "james", "rishab",
+#             "noah", "joyce", "nate", "janav", "hoek"]
 
+nameList = ["tyler", "ben"]
 
 transform = A.Compose([
     A.HorizontalFlip(p=0.5),
-    A.RandomBrightnessContrast(p=0.5),
+    A.RandomBrightnessContrast(p=0.4),
     A.Illumination(p=0.5),
-    A.Rotate(limit=45, p=0.5),
-    A.AdditiveNoise(p=0.5),
-    A.Blur(blur_limit=7, p=0.5),
-    A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
-    A.HueSaturationValue(p=0.5),
+    A.HueSaturationValue(p=0.3),
+    A.Resize(224, 224),
+    A.GaussNoise(std_range=(0.05, 0.05), p=0.3),
+    A.MotionBlur(blur_limit=5, p=0.2),
+    A.RandomGamma(p=0.3),
+    A.CLAHE(p=0.2),
+    # A.Normalize(mean=[0.5, 0.5,0.5],std=[0.5,0.5, 0.5]),
 ])
+
 count = 0
-for i in range(0,100,5):
-    image = cv2.imread("Dataset/tyler/tyler_"+str(i)+".png") 
-    augmented_image = transform(image=image)["image"]
-    cv2.imwrite(f"AlbumentationAugments/tyler/tyler_augmented_{count}.png", augmented_image)
-    count+=1
+for name in nameList:
+    count = 0
+    for i in range(0, 100, 5):
+        image = cv2.imread("Dataset/"+name+"/"+name+"_"+str(i)+".png")
+        augmented_image = transform(image=image)["image"]
+        augmented_image2 = transform(image=image)["image"]
+        augmented_image3 = transform(image=image)["image"]
+        augmented_image4 = transform(image=image)["image"]
+        augmented_image5 = transform(image=image)["image"]
+
+        cv2.imwrite(
+            f"AlbumentationAugments/{name}/{name}_augmented_{count}.png", augmented_image)
+        count += 1
+        cv2.imwrite(
+            f"AlbumentationAugments/{name}/{name}_augmented_{count}.png", augmented_image2)
+        count += 1
+        cv2.imwrite(
+            f"AlbumentationAugments/{name}/{name}_augmented_{count}.png", augmented_image3)
+        count += 1
+        cv2.imwrite(
+            f"AlbumentationAugments/{name}/{name}_augmented_{count}.png", augmented_image4)
+        count += 1
+        cv2.imwrite(
+            f"AlbumentationAugments/{name}/{name}_augmented_{count}.png", augmented_image5)
+        count += 1

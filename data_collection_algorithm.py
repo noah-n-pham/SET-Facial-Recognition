@@ -69,9 +69,15 @@ source = cv2.VideoCapture(s)
 win_name = "Camera Preview"
 cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
 
-net = cv2.dnn.readNetFromCaffe(
-    "deploy.prototxt", "res10_300x300_ssd_iter_140000_fp16.caffemodel")
-# Model parameters
+# Initialize YuNet detector
+detector = cv2.FaceDetectorYN.create(
+    model="face_detection_yunet_2023mar.onnx",
+    config="",
+    input_size=(320, 320),
+    score_threshold=0.4,
+    nms_threshold=0.3,
+    top_k=5000
+)
 centerCoordinates = (0, 0)
 dimentions = [0, 0]
 
@@ -80,76 +86,75 @@ height = 224
 
 
 def face_detection(source, image_name=None):
-    in_width = 300
-    in_height = 300
-    mean = [104, 117, 123]
-    conf_threshold = 0.4
-
     image = None
 
     has_frame, frame = source.read()
     if not has_frame:
         return
     frame = cv2.flip(frame, 1)
-    frame_height = frame.shape[0]
-    frame_width = frame.shape[1]
-
-    # Create a 4D blob from a frame.
-    blob = cv2.dnn.blobFromImage(
-        frame, 1.0, (in_width, in_height), mean, swapRB=False, crop=False)
-    # Run a model
-    net.setInput(blob)
-    detections = net.forward()
-
-    x_top_left = 0
-    y_top_left = 0
-    x_bottom_right = 0
-    y_bottom_right = 0
-
-    confidence = detections[0, 0, 0, 2]
-    if confidence > conf_threshold:
-        ofset = 10
-        x_top_left = int(detections[0, 0, 0, 3] * frame_width)
-        y_top_left = int(detections[0, 0, 0, 4] * frame_height)
-        x_bottom_right = int(detections[0, 0, 0, 5] * frame_width)
-        y_bottom_right = int(detections[0, 0, 0, 6] * frame_height)
-
-        x_offset = (int)((ofset/100) * (x_bottom_right - x_top_left))
-        y_offset = (int)((ofset/100) * (y_bottom_right - y_top_left))
-
-        x_top_left -= x_offset
-        x_bottom_right += x_offset
-        y_top_left -= y_offset
-        y_bottom_right += y_offset
-
-        if (image_name != None):
-            image = frame[y_top_left:y_bottom_right, x_top_left:x_bottom_right]
+    frame_height, frame_width = frame.shape[:2]
+    
+    # Update input size for current frame
+    detector.setInputSize((frame_width, frame_height))
+    
+    # Detect faces
+    _, faces = detector.detect(frame)
+    
+    if faces is not None and len(faces) > 0:
+        # Get the most confident face (first one after NMS)
+        face = faces[0]
+        
+        # Extract bounding box and confidence
+        x, y, w, h = map(int, face[:4])
+        confidence = face[14]  # YuNet stores normalized confidence at index 14
+        
+        # Extract landmarks: right_eye, left_eye, nose, right_mouth, left_mouth
+        nose_x = int(face[8])   # Nose tip x-coordinate
+        nose_y = int(face[9])   # Nose tip y-coordinate
+        
+        # Add offset (10% padding)
+        offset = 10
+        x_offset = int((offset/100) * w)
+        y_offset = int((offset/100) * h)
+        
+        x_padded = x - x_offset
+        y_padded = y - y_offset
+        w_padded = w + 2 * x_offset
+        h_padded = h + 2 * y_offset
+        
+        # Ensure bounds are within frame
+        x_padded = max(0, x_padded)
+        y_padded = max(0, y_padded)
+        w_padded = min(w_padded, frame_width - x_padded)
+        h_padded = min(h_padded, frame_height - y_padded)
+        
+        if image_name is not None:
+            image = frame[y_padded:y_padded+h_padded, x_padded:x_padded+w_padded]
             image = cv2.resize(image, (width, height))
             cv2.imwrite(image_name, image)
-            dimentions[0] = x_bottom_right - x_top_left
-            dimentions[1] = y_bottom_right - y_top_left
-
-        cv2.rectangle(frame, (x_top_left, y_top_left),
-                      (x_bottom_right, y_bottom_right), (0, 255, 0))
+            dimentions[0] = w_padded
+            dimentions[1] = h_padded
+        
+        # Draw rectangle
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        
+        # Draw confidence label
         label = "Confidence: %.4f" % confidence
-        label_size, base_line = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-
+        label_size, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         cv2.rectangle(
             frame,
-            (x_top_left, y_top_left - label_size[1]),
-            (x_top_left + label_size[0], y_top_left + base_line),
+            (x, y - label_size[1]),
+            (x + label_size[0], y + base_line),
             (255, 255, 255),
             cv2.FILLED,
         )
-        cv2.putText(frame, label, (x_top_left, y_top_left),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
-
-    t, _ = net.getPerfProfile()
-    cv2.circle(frame, (int((x_top_left + x_bottom_right)/2),
-               int((y_top_left + y_bottom_right)/2)), 5, (255, 0, 0), -1)
+        cv2.putText(frame, label, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+        
+        # Draw center point at nose landmark (more accurate than bbox center)
+        cv2.circle(frame, (nose_x, nose_y), 5, (255, 0, 0), -1)
+    
     cv2.imshow(win_name, frame)
-    # centerCoordinates = (int((x_top_left + x_bottom_right)/2), int((y_top_left + y_bottom_right)/2))
+    # centerCoordinates = (nose_x, nose_y)
     return image
 
 

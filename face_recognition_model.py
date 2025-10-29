@@ -75,12 +75,15 @@ win_name = "Camera Preview"
 cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
 
 
-net = cv2.dnn.readNetFromCaffe("deploy.prototxt", "res10_300x300_ssd_iter_140000_fp16.caffemodel")
-# Model parameters
-in_width = 300
-in_height = 300
-mean = [104, 117, 123]
-conf_threshold = 0.7
+# Initialize YuNet detector
+detector = cv2.FaceDetectorYN.create(
+    model="face_detection_yunet_2023mar.onnx",
+    config="",
+    input_size=(320, 320),
+    score_threshold=0.7,
+    nms_threshold=0.3,
+    top_k=5000
+)
 centerCoordinates = (0, 0)
 
 while cv2.waitKey(1) != 27:
@@ -88,46 +91,52 @@ while cv2.waitKey(1) != 27:
     if not has_frame:
         break
     frame = cv2.flip(frame, 1)
-    frame_height = frame.shape[0]
-    frame_width = frame.shape[1]
-
-
-    # Create a 4D blob from a frame.
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (in_width, in_height), mean, swapRB=False, crop=False)
-    # Run a model
-    net.setInput(blob)
-    detections = net.forward()
-
-    confidence = detections[0, 0, 0, 2]
-    if confidence > conf_threshold:
-        x_top_left = int(detections[0, 0,0, 3] * frame_width)
-        y_top_left = int(detections[0, 0, 0, 4] * frame_height)
-        x_bottom_right  = int(detections[0, 0, 0, 5] * frame_width)
-        y_bottom_right  = int(detections[0, 0, 0, 6] * frame_height)
-        cv2.rectangle(frame, (x_top_left, y_top_left), (x_bottom_right, y_bottom_right), (0, 255, 0))
+    frame_height, frame_width = frame.shape[:2]
+    
+    # Update input size for current frame
+    detector.setInputSize((frame_width, frame_height))
+    
+    # Detect faces
+    _, faces = detector.detect(frame)
+    
+    if faces is not None and len(faces) > 0:
+        # Get the most confident face (first one after NMS)
+        face = faces[0]
+        
+        # Extract bounding box and confidence
+        x, y, w, h = map(int, face[:4])
+        confidence = face[14]  # YuNet stores normalized confidence at index 14
+        
+        # Extract landmarks: right_eye, left_eye, nose, right_mouth, left_mouth
+        nose_x = int(face[8])   # Nose tip x-coordinate
+        nose_y = int(face[9])   # Nose tip y-coordinate
+        
+        # Draw rectangle
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        
+        # Draw confidence label
         label = "Confidence: %.4f" % confidence
         label_size, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-
-
         cv2.rectangle(
-                frame,
-                (x_top_left, y_top_left - label_size[1]),
-                (x_top_left + label_size[0], y_top_left + base_line),
-                (255, 255, 255),
-                cv2.FILLED,
-            )
-        cv2.putText(frame, label, (x_top_left, y_top_left), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
-
-
-    t, _ = net.getPerfProfile()
-    fps_label = "Center Coordinates: x=%d y=%d" % (int(x_top_left/2), int(y_top_left/2))
-    cv2.putText(frame, fps_label, (0, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
-    cv2.imshow(win_name, frame)
-    cv2.circle(frame, (int((x_top_left + x_bottom_right)/2), int((y_top_left + y_bottom_right)/2)), 5, (255, 0, 0), -1)
-    cv2.imshow(win_name, frame)
+            frame,
+            (x, y - label_size[1]),
+            (x + label_size[0], y + base_line),
+            (255, 255, 255),
+            cv2.FILLED,
+        )
+        cv2.putText(frame, label, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+        
+        # Draw center point at nose landmark (more accurate than bbox center)
+        cv2.circle(frame, (nose_x, nose_y), 5, (255, 0, 0), -1)
+        
+        # Update center coordinates
+        centerCoordinates = (nose_x, nose_y)
+        fps_label = "Center Coordinates: x=%d y=%d" % (nose_x, nose_y)
+        cv2.putText(frame, fps_label, (0, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
+        
+        #send_coordinates(centerCoordinates[0], centerCoordinates[1])
     
-    centerCoordinates = (int((x_top_left + x_bottom_right)/2), int((y_top_left + y_bottom_right)/2))
-    #send_coordinates(centerCoordinates[0], centerCoordinates[1])
+    cv2.imshow(win_name, frame)
 
 
 source.release()

@@ -122,7 +122,7 @@ def face_detection(source, image_name=None):
         w_padded = w + 2 * x_offset
         h_padded = h + 2 * y_offset
         
-        # Ensure bounds are within frame
+        # Ensure bounds are within frame test
         x_padded = max(0, x_padded)
         y_padded = max(0, y_padded)
         w_padded = min(w_padded, frame_width - x_padded)

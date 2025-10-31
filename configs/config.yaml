@@ -1,0 +1,66 @@
+# Facial Recognition Training Configuration
+
+# Data Configuration
+data:
+  dataset_path: "data/raw/Dataset"
+  train_split: 0.8  # 80% training, 20% validation
+  batch_size: 32
+  num_workers: 4
+  image_size: 224
+  num_classes: 9  # ben, hoek, james, janav, joyce, nate, noah, rishab, tyler
+
+# Model Configuration
+model:
+  backbone: "resnet18"
+  pretrained: true
+  embedding_dim: 512
+  dropout: 0.0
+
+# ArcFace Loss Configuration
+arcface:
+  margin: 0.5  # Angular margin (m)
+  scale: 64.0  # Feature scale (s)
+
+# Training Configuration
+training:
+  epochs: 50
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "adam"  # adam or sgd
+  momentum: 0.9  # For SGD only
+  lr_scheduler: "step"  # step, cosine, or plateau
+  lr_step_size: 10  # For step scheduler
+  lr_gamma: 0.1  # Learning rate decay factor
+  early_stopping_patience: 10
+  
+# Paths
+paths:
+  checkpoint_dir: "models/checkpoints"
+  export_dir: "models/exported"
+  logs_dir: "logs"
+
+# Inference Configuration
+inference:
+  model_path: "models/exported/face_recognition.onnx"
+  confidence_threshold: 0.7
+  similarity_threshold: 0.6  # Cosine similarity threshold for recognition
+  
+# Hardware Configuration
+hardware:
+  device: "cuda"  # cuda or cpu
+  arduino_port: "/dev/ttyUSB0"  # Change based on your system
+  arduino_baud_rate: 9600
+
+# Augmentation (applied via src/data/augmentation.py)
+augmentation:
+  train:
+    horizontal_flip: 0.5
+    brightness_contrast: 0.4
+    hue_saturation: 0.3
+    gauss_noise: 0.3
+    motion_blur: 0.2
+    random_gamma: 0.3
+    clahe: 0.2
+  val:
+    enabled: false  # Validation uses only resize and normalize
+

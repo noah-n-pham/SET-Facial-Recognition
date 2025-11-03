@@ -6,10 +6,20 @@ Real-time facial recognition using ResNet-18 + ArcFace loss, deployed on Jetson 
 
 - **Face Detection**: OpenCV + YuNet
 - **Training**: PyTorch + ResNet-18 (torchvision) + ArcFace loss
+- **Transfer Learning**: Frozen backbone approach (ResNet-18 frozen, head trainable)
 - **Augmentation**: Albumentations + torchvision.transforms
 - **Arrays/Math**: NumPy (L2-norm, cosine similarity, embeddings)
 - **Deployment**: ONNX + TensorRT (Jetson Nano)
 - **Hardware**: PySerial + Arduino
+
+## Transfer Learning Strategy
+
+This project uses **Frozen Backbone + Trainable Head** for efficient training:
+- ❄️ **ResNet-18 backbone**: Frozen (~11M params, pretrained features)
+- 🔥 **Embedding + ArcFace head**: Trainable (~264K params)
+
+Benefits: 2x faster training, less overfitting, better for small datasets.  
+📖 See `TRANSFER_LEARNING_GUIDE.md` for details.
 
 ## Project Structure
 
@@ -102,7 +112,8 @@ python src/inference/inference.py --model models/face_model.onnx --arduino /dev/
 - YuNet face detection (working)
 - Data collection script (working)
 - Transform definitions (on-the-fly augmentation)
-- Configuration system (config.yaml)
+- Configuration system (config.yaml with freeze_backbone setting)
+- Transfer learning guide (TRANSFER_LEARNING_GUIDE.md)
 
 ### 📝 To Implement
 1. **`src/data/dataset.py`** - PyTorch Dataset class for loading images with augmentation

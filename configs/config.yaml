@@ -13,6 +13,7 @@ data:
 model:
   backbone: "resnet18"
   pretrained: true
+  freeze_backbone: true  # Freeze ResNet-18, only train embedding + ArcFace head
   embedding_dim: 512
   dropout: 0.0
 

@@ -20,27 +20,57 @@ This project uses **transfer learning with a frozen backbone**:
 
 ### ✅ Phase 1: Environment Setup (Complete These First)
 
+**IMPORTANT: Check Python version first!**
+```bash
+# Check Python version (must be 3.8-3.12 and 64-bit)
+python --version  # or python3 --version
+```
+
+### For Mac/Linux:
 ```bash
 # 1. Create and activate virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# 2. Upgrade pip (fixes many installation issues)
+# 2. Upgrade pip
 pip install --upgrade pip
 
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# Note: If you get "torch>=2.0.0" error, install PyTorch separately first:
-# pip install torch torchvision
-# Then: pip install -r requirements.txt
-
 # 4. Test GPU access
 python test_gpu.py
-# Expected: "✅ GPU is ready for training!" (or warning if CPU-only)
-# CPU-only is fine! Training takes 1-2 hours instead of 5-10 minutes
+```
 
-# 4. Verify dataset
+### For Windows:
+```powershell
+# 1. Check you have Python 3.8-3.12 (64-bit)
+python --version
+
+# 2. Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# 3. Upgrade pip
+python -m pip install --upgrade pip
+
+# 4. Install PyTorch first (Windows needs explicit index URL)
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# 5. Install other dependencies
+pip install -r requirements.txt
+
+# 6. Test GPU access
+python test_gpu.py
+```
+
+**Common Windows Issues:**
+- **"Could not find torch"**: Your Python might be 32-bit or wrong version
+  - Download Python 3.11 (64-bit) from python.org
+  - Make sure to check "Add Python to PATH" during installation
+- **"pip: command not found"**: Use `python -m pip` instead of `pip`
+- **Verify dataset**
+```bash
 python verify_dataset.py
 # Expected: ~900 images across 9 people
 
@@ -268,18 +298,35 @@ bash test_full_pipeline.sh
 ## 💡 Troubleshooting
 
 **Installation issues:**
-- **Error: "Could not find version torch>=2.0.0"**
+
+- **Windows Error: "Could not find version torch"**
+  - **Cause**: Wrong Python version or 32-bit Python
+  - **Solution**:
+    1. Check Python version: `python --version` (need 3.8-3.12, 64-bit)
+    2. If wrong version, download Python 3.11 (64-bit) from python.org
+    3. Use PyTorch index URL:
+       ```powershell
+       pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+       pip install -r requirements.txt
+       ```
+
+- **Mac/Linux Error: "Could not find version torch>=2.0.0"**
   - Solution: Install PyTorch separately first:
     ```bash
     pip install --upgrade pip
     pip install torch torchvision
     pip install -r requirements.txt
     ```
+
 - **Error: "onnxruntime-gpu not found"** (older versions of requirements.txt)
   - Solution: Use CPU version: `pip install onnxruntime>=1.15.0`
   - Mac users don't need GPU version
-- **Mac M1/M2 users**: All packages should work with CPU versions
-- **General tip**: Always upgrade pip first: `pip install --upgrade pip`
+
+- **General tips**:
+  - Always upgrade pip first: `pip install --upgrade pip`
+  - Windows users: Use `python -m pip` if `pip` command fails
+  - Check Python is 64-bit: `python -c "import struct; print(struct.calcsize('P') * 8)"`
+    (should print 64, not 32)
 
 **Dataset issues:**
 - Check paths in `config.yaml`

@@ -68,26 +68,34 @@ Facial-Recognition/
 
 ### 1. Setup Environment
 
+**Prerequisites:**
+- Python 3.8-3.12 (64-bit) - Check with: `python --version`
+- If wrong version, download from python.org
+
+**Mac/Linux:**
 ```bash
-# Create virtual environment (Python 3.8+)
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Upgrade pip first
+source venv/bin/activate
 pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-# Install dependencies
+**Windows:**
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 ```
 
 **Note for different platforms:**
-- **Mac (Apple Silicon/Intel)**: Use CPU-only PyTorch (installed by default)
-- **Windows/Linux with NVIDIA GPU**: After installing requirements, optionally upgrade to GPU version:
-  ```bash
-  pip install onnxruntime-gpu>=1.15.0
-  ```
-- **Mac users**: Training will be slower (1-2 hours) but works fine on CPU
-- **GPU recommended but not required**: Frozen backbone approach is efficient even on CPU
+- **Windows**: Must use PyTorch CPU index URL (shown above)
+- **Mac (Apple Silicon/Intel)**: CPU-only works great
+- **Windows/Linux with NVIDIA GPU**: Optionally install GPU version after setup
+- **Training time**: 5-10 min (GPU) or 1-2 hours (CPU) - both work fine!
+
+📖 **Having issues?** See QUICK_START.md troubleshooting section
 
 ### 2. Collect Data (Optional)
 

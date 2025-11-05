@@ -29,13 +29,33 @@ class FaceDataset(Dataset):
         self.split = split
         
         # TODO: Initialize empty lists for storing data
-        # Create: self.image_paths (list of strings), self.labels (list of ints)
-        # Create: self.label_to_name (dict: int -> string)
-        # Create: self.name_to_label (dict: string -> int)
+        self.image_paths = [] 
+        self.labels = [] 
+        self.label_to_name = {}
+        self.name_to_label = {}
         
         # TODO: Build dataset by looping through person folders
         # Steps:
         # 1. Get all subdirectories in root_dir (these are person folders)
+        dataset_path = root_dir + "/data"
+        names = [folder.name.lower() 
+                 for folder in dataset_path.iterdir() 
+                 if folder.is_dir()].sort() #a
+        
+        for id, name in enumerate(names):
+            self.label_to_name[id] = name #b
+            self.name_to_label[name] = id #c 
+              
+        for person in names:
+            folder = dataset_path / person
+            image_paths_person = [
+                img.name.lower()
+                for img in folder.glob("*.png")  # matches .png 
+            ]
+            self.image_paths.extend(image_paths_person)
+
+            for i in range(20):
+                self.labels.append(names.index(person)) #adds the matching person index to the labels list
         # 2. Sort them alphabetically for consistent label assignment
         # 3. For each folder (with enumerate to get label_id):
         #    a. Get person name from folder.name
@@ -45,6 +65,7 @@ class FaceDataset(Dataset):
         #    e. For each image, append str(image_path) to self.image_paths
         #    f. For each image, append label_id to self.labels
         
+        
         # TODO: Split into train/val sets
         # Use sklearn.model_selection.train_test_split with:
         #   - X=self.image_paths, y=self.labels
@@ -53,7 +74,12 @@ class FaceDataset(Dataset):
         #   - stratify=self.labels (keeps class distribution balanced)
         # This returns: train_paths, val_paths, train_labels, val_labels
         # Based on self.split, keep only train or val data
-        
+        x = self.image_paths
+        y = self.labels
+        train_size = train_ratio
+        random_state = random_seed
+        stratify = self.labels
+
         # TODO: Set transforms based on split
         # If split is 'train', use get_train_transforms()
         # If split is 'val', use get_val_transforms()
@@ -126,4 +152,3 @@ def create_dataloaders(config):
     
     # TODO: Return train_loader, val_loader, class_names
     pass
-

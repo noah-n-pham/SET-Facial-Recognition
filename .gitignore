@@ -46,7 +46,7 @@ models/exported/*.trt
 models/exported/*.engine
 
 # Data (large datasets)
-data/raw/*/
+# data/raw/*/  # Commented out to allow dataset images for team members
 data/processed/*/
 AlbumentationAugments/
 TrainingData/

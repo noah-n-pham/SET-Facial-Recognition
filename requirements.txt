@@ -13,7 +13,8 @@ numpy>=1.24.0
 
 # Model Export & Inference
 onnx>=1.14.0
-onnxruntime-gpu>=1.15.0  # Use onnxruntime for CPU-only
+onnxruntime>=1.15.0  # CPU version (works on all platforms)
+# For GPU on Linux/Windows with NVIDIA: pip install onnxruntime-gpu>=1.15.0
 
 # Hardware Communication
 pyserial>=3.5
@@ -24,6 +25,9 @@ pyyaml>=6.0
 # Visualization & Metrics
 matplotlib>=3.7.0
 scikit-learn>=1.3.0
+
+# Progress bars
+tqdm>=4.65.0
 
 # Image Processing
 Pillow>=9.0.0

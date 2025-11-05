@@ -70,12 +70,24 @@ Facial-Recognition/
 
 ```bash
 # Create virtual environment (Python 3.8+)
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Upgrade pip first
+pip install --upgrade pip
 
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+**Note for different platforms:**
+- **Mac (Apple Silicon/Intel)**: Use CPU-only PyTorch (installed by default)
+- **Windows/Linux with NVIDIA GPU**: After installing requirements, optionally upgrade to GPU version:
+  ```bash
+  pip install onnxruntime-gpu>=1.15.0
+  ```
+- **Mac users**: Training will be slower (1-2 hours) but works fine on CPU
+- **GPU recommended but not required**: Frozen backbone approach is efficient even on CPU
 
 ### 2. Collect Data (Optional)
 

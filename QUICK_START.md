@@ -25,12 +25,20 @@ This project uses **transfer learning with a frozen backbone**:
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# 2. Install dependencies
+# 2. Upgrade pip (fixes many installation issues)
+pip install --upgrade pip
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Test GPU access
+# Note: If you get "torch>=2.0.0" error, install PyTorch separately first:
+# pip install torch torchvision
+# Then: pip install -r requirements.txt
+
+# 4. Test GPU access
 python test_gpu.py
 # Expected: "✅ GPU is ready for training!" (or warning if CPU-only)
+# CPU-only is fine! Training takes 1-2 hours instead of 5-10 minutes
 
 # 4. Verify dataset
 python verify_dataset.py
@@ -258,6 +266,20 @@ bash test_full_pipeline.sh
 - ✅ Arduino responds to recognition events
 
 ## 💡 Troubleshooting
+
+**Installation issues:**
+- **Error: "Could not find version torch>=2.0.0"**
+  - Solution: Install PyTorch separately first:
+    ```bash
+    pip install --upgrade pip
+    pip install torch torchvision
+    pip install -r requirements.txt
+    ```
+- **Error: "onnxruntime-gpu not found"** (older versions of requirements.txt)
+  - Solution: Use CPU version: `pip install onnxruntime>=1.15.0`
+  - Mac users don't need GPU version
+- **Mac M1/M2 users**: All packages should work with CPU versions
+- **General tip**: Always upgrade pip first: `pip install --upgrade pip`
 
 **Dataset issues:**
 - Check paths in `config.yaml`

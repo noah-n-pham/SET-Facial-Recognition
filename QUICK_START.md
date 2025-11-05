@@ -12,7 +12,7 @@ This project uses **transfer learning with a frozen backbone**:
 - ✅ Better generalization
 - ✅ Less GPU memory needed
 
-📖 See `TRANSFER_LEARNING_GUIDE.md` for detailed explanation.
+📖 See `README.md#transfer-learning-strategy` for a concise explanation of why we freeze the backbone.
 
 ---
 

@@ -19,7 +19,7 @@ This project uses **Frozen Backbone + Trainable Head** for efficient training:
 - 🔥 **Embedding + ArcFace head**: Trainable (~264K params)
 
 Benefits: 2x faster training, less overfitting, better for small datasets.  
-📖 See `TRANSFER_LEARNING_GUIDE.md` for details.
+📖 See the Transfer Learning Strategy section below for details.
 
 ## Project Structure
 
@@ -113,7 +113,7 @@ python src/inference/inference.py --model models/face_model.onnx --arduino /dev/
 - Data collection script (working)
 - Transform definitions (on-the-fly augmentation)
 - Configuration system (config.yaml with freeze_backbone setting)
-- Transfer learning guide (TRANSFER_LEARNING_GUIDE.md)
+- Transfer learning strategy documented in this README
 
 ### 📝 To Implement
 1. **`src/data/dataset.py`** - PyTorch Dataset class for loading images with augmentation

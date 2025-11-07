@@ -74,23 +74,37 @@ class FaceDataset(Dataset):
         #   - stratify=self.labels (keeps class distribution balanced)
         # This returns: train_paths, val_paths, train_labels, val_labels
         # Based on self.split, keep only train or val data
-        x = self.image_paths
-        y = self.labels
-        train_size = train_ratio
-        random_state = random_seed
-        stratify = self.labels
+        train_paths, val_paths, train_labels, val_labels = train_test_split(
+            self.image_paths,
+            self.labels,
+            train_size=train_ratio,
+            random_state=random_seed,
+            stratify=self.labels
+        )
+        
+        if self.split == 'train':
+            self.image_paths = train_paths
+            self.labels = train_labels
+        else:
+            self.image_paths = val_paths
+            self.labels = val_labels
 
         # TODO: Set transforms based on split
         # If split is 'train', use get_train_transforms()
         # If split is 'val', use get_val_transforms()
+        if self.split == 'train':
+            self.transform = get_train_transforms()
+        else:
+            self.transform = get_val_transforms()
         
         # TODO: Print summary
         # Print: "{split} dataset: {num_images} images, {num_classes} classes"
+        print(f"{self.split} dataset: {len(self.image_paths)} images, {len(self.label_to_name)} classes")
     
     def __len__(self):
         """Return total number of images in this split"""
         # TODO: Return length of self.image_paths
-        pass
+        return len(self.image_paths)
     
     def __getitem__(self, idx):
         """
@@ -104,10 +118,14 @@ class FaceDataset(Dataset):
         # 1. Get image path from self.image_paths[idx]
         # 2. Load with cv2.imread(path)
         # 3. Convert from BGR to RGB using cv2.cvtColor(..., cv2.COLOR_BGR2RGB)
-        
+        image_path = self.image_paths[idx]
+        cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         # TODO: Apply augmentation transforms
         # Call self.transform(image=image) - returns a dictionary
         # Extract tensor with ['image'] key
+        image = self.transform(image=image)['image']
         
         # TODO: Get corresponding label
         # Get from self.labels[idx]

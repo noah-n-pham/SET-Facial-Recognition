@@ -37,10 +37,10 @@ class FaceDataset(Dataset):
         # TODO: Build dataset by looping through person folders
         # Steps:
         # 1. Get all subdirectories in root_dir (these are person folders)
-        dataset_path = root_dir + "/data"
-        names = [folder.name.lower() 
+        dataset_path = self.root_dir
+        names = sorted([folder.name.lower() 
                  for folder in dataset_path.iterdir() 
-                 if folder.is_dir()].sort() #a
+                 if folder.is_dir()]) #a
         
         for id, name in enumerate(names):
             self.label_to_name[id] = name #b
@@ -49,19 +49,19 @@ class FaceDataset(Dataset):
         for person in names:
             folder = dataset_path / person
             image_paths_person = [
-                img.name.lower()
+                str(img)
                 for img in folder.glob("*.png")  # matches .png 
             ]
             self.image_paths.extend(image_paths_person)
 
-            for i in range(20):
-                self.labels.append(names.index(person)) #adds the matching person index to the labels list
+            for i in range(len(image_paths_person)):
+                self.labels.append(self.name_to_label[person]) #adds the matching person index to the labels list
         # 2. Sort them alphabetically for consistent label assignment
         # 3. For each folder (with enumerate to get label_id):
         #    a. Get person name from folder.name
         #    b. Store in label_to_name[label_id] = person_name
         #    c. Store in name_to_label[person_name] = label_id
-        #    d. Find all .png and .jpg images in this folder
+        #    d. Find all .png images in this folder
         #    e. For each image, append str(image_path) to self.image_paths
         #    f. For each image, append label_id to self.labels
         

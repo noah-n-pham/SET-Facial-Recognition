@@ -26,8 +26,9 @@ class FaceEmbeddingModel:
         """Initialize pretrained face recognition model."""
 
         #TODO 1
+        ctx_id = -1 if device == 'cpu' else 0
         self.app = FaceAnalysis(name=model_name)
-        self.app.prepare(-1)
+        self.app.prepare(ctx_id,(640,640))
         
         print(f"Loading {model_name} model on {device}...")
         
@@ -43,7 +44,6 @@ class FaceEmbeddingModel:
         # - First run will download model files (~100MB)
         # - See InsightFace documentation for FaceAnalysis usage
         
-        raise NotImplementedError("TODO 1: Initialize FaceAnalysis")
         
         print("✅ Model loaded!\n")
     
@@ -51,11 +51,11 @@ class FaceEmbeddingModel:
 
         #TODO 2 & TODO 3
         face_rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
-        self.app.get(face_rgb)
+        faces = self.app.get(face_rgb)
          
 
-        if (len(face) > 0):
-            return face[0].embedding
+        if (len(faces) > 0):
+            return faces[0].embedding
         
         return None
         """

@@ -243,6 +243,7 @@ reference_embeddings = np.array([
 label_names = ['ben', 'james', ...]
 ```
 
+
 ### 📝 Implementation Part A: Collect Face Photos
 
 **File:** `data/face_capture.py`

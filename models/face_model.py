@@ -11,6 +11,8 @@ TODOs: 3
 import numpy as np
 import cv2
 
+from insightface.app import FaceAnalysis
+from scipy.datasets import face
 
 class FaceEmbeddingModel:
     """
@@ -22,6 +24,10 @@ class FaceEmbeddingModel:
     
     def __init__(self, model_name='buffalo_l', device='cpu'):
         """Initialize pretrained face recognition model."""
+
+        #TODO 1
+        self.app = FaceAnalysis(name=model_name)
+        self.app.prepare(-1)
         
         print(f"Loading {model_name} model on {device}...")
         
@@ -42,6 +48,16 @@ class FaceEmbeddingModel:
         print("✅ Model loaded!\n")
     
     def extract_embedding(self, face_img):
+
+        #TODO 2 & TODO 3
+        face_rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+        self.app.get(face_rgb)
+         
+
+        if (len(face) > 0):
+            return face[0].embedding
+        
+        return None
         """
         Extract 512-dimensional embedding from face image.
         
@@ -60,7 +76,6 @@ class FaceEmbeddingModel:
         #
         # Hint: Look up cv2.COLOR_BGR2RGB conversion code
         
-        raise NotImplementedError("TODO 2: Convert BGR to RGB")
         
         # TODO 3: Detect face and extract embedding
         # ==========================================
@@ -75,7 +90,6 @@ class FaceEmbeddingModel:
         # - Each face object has an .embedding attribute
         # - InsightFace already L2-normalizes embeddings
         
-        raise NotImplementedError("TODO 3: Extract embedding")
     
     def extract_embedding_batch(self, face_imgs):
         """Extract embeddings from multiple images (helper method)."""

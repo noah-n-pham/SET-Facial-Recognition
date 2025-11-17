@@ -1,122 +1,58 @@
 # Facial Recognition System
 
-Build a complete real-time facial recognition system using pretrained MobileFaceNet from InsightFace.
+A facial recognition project built by the SASE Engineering Team using pretrained models from InsightFace. This system is designed for real-time operation and will be integrated into our autonomous robot, deployed on Jetson Nano for person identification and interaction.
 
-## 🎯 What You'll Build
+## Architecture
 
-- **Face Detection** using YuNet (OpenCV)
-- **Face Recognition** using pretrained MobileFaceNet (InsightFace)
-- **Real-Time Recognition** via webcam at 30+ FPS
-- **Hardware Deployment** to Jetson Nano + Arduino (optional)
+The system uses a two-stage pipeline:
 
-## 🚀 Quick Start
+1. **Face Detection** - YuNet localizes faces in video frames
+2. **Face Recognition** - InsightFace recognition model generates 512D embeddings for identity matching against a reference database
 
-### 1. Install Dependencies
+## Quick Start
+
+### Installation
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Verify Installation
-```bash
-python test_installation.py
-```
-Should see: ✅ All dependencies installed successfully!
-
-### 3. Start Learning!
-👉 **Open `LEARNING_GUIDE.md` and follow the step-by-step instructions!**
-
-### 4. Check Progress Anytime
+### Check Progress
 ```bash
 python check_progress.py
 ```
-Tracks which TODOs you've completed and what's next.
 
-## 📚 Learning Approach
+### Implementation Guide
+See `LEARNING_GUIDE.md` for detailed instructions on each phase.
 
-This project uses **TODO-based learning**:
-- Read concept explanations in `LEARNING_GUIDE.md`
-- Navigate to specific files as directed
-- Implement TODOs with detailed guidance
-- Test your implementation at each phase
-- Build a fully functional system!
-
-## ⏱️ Time Estimate
-
-- **Phase 1:** Load Pretrained Model (30-45 min)
-- **Phase 2:** Build Face Database (1-2 hours)
-- **Phase 3:** Real-Time Recognition (2-3 hours)
-- **Phase 4:** Hardware Deployment (optional, 2-3 hours)
-
-**Total: 6-8 hours**
-
-## 📊 What You'll Learn
-
-✅ Face detection and recognition concepts  
-✅ Embeddings and similarity matching  
-✅ Working with pretrained models (industry standard)  
-✅ Real-time computer vision  
-✅ Hardware deployment  
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
-📁 Facial-Recognition/
-├── 📄 README.md                    ← Quick overview (you are here!)
-├── 📘 LEARNING_GUIDE.md            ← Complete step-by-step guide (START HERE)
-├── 🔍 check_progress.py            ← Track your TODO completion
-├── ✅ test_installation.py         ← Verify dependencies installed
-├── 📋 requirements.txt             ← Python dependencies
-│
-├── 📁 models/
-│   └── face_model.py               ← Phase 1: Load pretrained model (3 TODOs)
-│
-├── 📁 utils/
-│   └── face_detector.py            ← Phase 2A: YuNet wrapper (2 TODOs)
-│
-├── 📁 data/
-│   └── face_capture.py             ← Phase 2A: Capture photos (2 TODOs)
-│
-├── 📁 core/
-│   ├── generate_embeddings.py     ← Phase 2B: Build database (3 TODOs)
-│   └── face_recognizer.py         ← Phase 3: Real-time system (4 TODOs)
-│
-├── 📁 deployment/
-│   └── jetson_inference.py        ← Phase 4: Jetson deployment guide (optional)
-│
-├── 📁 configs/
-│   └── config.yaml                ← System configuration
-│
-└── 📁 assets/
-    └── face_detection_yunet_*.onnx ← YuNet face detector model
+Facial-Recognition/
+├── models/          # Face embedding model wrapper
+├── utils/           # Face detection utilities
+├── data/            # Photo capture and dataset
+├── core/            # Recognition system and database generation
+├── deployment/      # Jetson Nano deployment scripts
+└── configs/         # System configuration
 ```
 
-## 🎓 Educational Goals
-
-This project teaches you:
-- Modern face recognition systems
-- Industry-standard practices (pretrained models)
-- Real-time computer vision
-- Edge device deployment
-- Python, OpenCV, NumPy, and deep learning concepts
-
-## 💡 Why Pretrained Models?
-
-Instead of training our own model, we use **MobileFaceNet from InsightFace**:
-- Trained on millions of faces
-- Industry-standard accuracy
-- No GPU or training time needed
-- This is how production systems work!
-
-## 📝 Requirements
+## Tech Stack
 
 - Python 3.8+
-- Webcam (for data collection and real-time recognition)
-- Basic Python knowledge
+- InsightFace (buffalo_l model pack)
+- OpenCV (YuNet detection)
+- NumPy
+- ONNX Runtime
 
-## 🚀 Ready to Start?
+## Deployment
 
-👉 **Open `LEARNING_GUIDE.md` now!**
+This system is designed for deployment on Jetson Nano.
 
----
+## About
 
-**Questions?** All concepts are explained in `LEARNING_GUIDE.md` with detailed reasoning and instructions.
+This project is part of the SASE Engineering Team's autonomous robotics initiative. We're building a face recognition system to enable our robot to identify and interact with team members, combining computer vision with embedded systems deployment.
+
+## References
+
+- [InsightFace](https://github.com/deepinsight/insightface)
+- [YuNet Face Detection](https://github.com/opencv/opencv_zoo/tree/master/models/face_detection_yunet)

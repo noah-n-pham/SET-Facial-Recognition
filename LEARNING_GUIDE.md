@@ -190,11 +190,11 @@ def __init__(self, model_name='buffalo_l', device='cpu'):
 
 **Hint:** Check InsightFace documentation for exact syntax.
 
-#### TODO 2: Extract Embedding from Face Image
+#### TODO 2: Convert BGR to RGB
 
 ```python
 def extract_embedding(self, face_img):
-    # TODO 2: Detect face and extract embedding
+    # TODO 2: Convert BGR to RGB
 ```
 
 **What to implement:**
@@ -206,13 +206,29 @@ def extract_embedding(self, face_img):
 
 **Reasoning:**
 - Color space conversion is necessary (BGR vs RGB)
+- OpenCV uses BGR, InsightFace expects RGB
+- Use cv2.cvtColor() with cv2.COLOR_BGR2RGB
+
+#### TODO 3: Extract Embedding from Face Image
+
+```python
+    # TODO 3: Detect face and extract embedding
+```
+
+**What to implement:**
+1. Call self.app.get(face_rgb) to detect faces
+2. Check if any faces detected (len(faces) > 0)
+3. Return faces[0].embedding (already normalized)
+4. Return None if no face detected
+
+**Reasoning:**
 - .get() returns list of detected faces with embeddings
 - Each face object has .embedding attribute
 - InsightFace automatically normalizes embeddings to unit length
 
 **Test your implementation:**
 ```bash
-python test_model.py
+python models/face_model.py
 # Expected: Loads model, extracts embedding, shows shape [512]
 ```
 
@@ -243,17 +259,59 @@ reference_embeddings = np.array([
 label_names = ['ben', 'james', ...]
 ```
 
-### 📝 Implementation Part A: Collect Face Photos
+### 📝 Implementation Part A: Face Detection Wrapper
+
+**File:** `utils/face_detector.py`
+
+**Your Task:** Wrap YuNet detector for easy use.
+
+#### TODO 4: Initialize YuNet
+
+```python
+def __init__(self, model_path, conf_threshold=0.7):
+    # TODO 4: Create YuNet face detector
+```
+
+**What to implement:**
+1. Use cv2.FaceDetectorYN.create()
+2. Set model_path, score_threshold, nms_threshold
+3. Default input size (320, 320)
+
+**Reasoning:**
+- YuNet is a fast, accurate face detector
+- score_threshold filters weak detections
+- nms_threshold controls overlap between detections
+
+#### TODO 5: Detect Faces in Frame
+
+```python
+def detect(self, frame):
+    # TODO 5: Detect faces and return bounding boxes
+```
+
+**What to implement:**
+1. Get frame dimensions
+2. Update detector input size: self.detector.setInputSize()
+3. Call self.detector.detect(frame)
+4. Parse results: extract bounding boxes [x, y, w, h]
+5. Return list of bounding boxes
+
+**Reasoning:**
+- Input size must match frame size for accurate detection
+- YuNet returns complex array - we simplify to just boxes
+- Empty list if no faces detected
+
+### 📝 Implementation Part B: Collect Face Photos
 
 **File:** `data/face_capture.py`
 
 **Your Task:** Implement webcam capture to collect photos of each team member.
 
-#### TODO 3: Initialize Webcam
+#### TODO 6: Initialize Webcam
 
 ```python
 def __init__(self, output_dir='data/raw/Dataset'):
-    # TODO 3: Initialize webcam and face detector
+    # TODO 6: Initialize webcam and face detector
 ```
 
 **What to implement:**
@@ -266,11 +324,11 @@ def __init__(self, output_dir='data/raw/Dataset'):
 - We need face detector to show bounding boxes while capturing
 - Organized folder structure: data/raw/Dataset/person_name/
 
-#### TODO 4: Capture Photos for Person
+#### TODO 7: Capture Photos for Person
 
 ```python
 def capture_person(self, person_name, num_photos=20):
-    # TODO 4: Capture photos when user presses SPACE
+    # TODO 7: Capture photos when user presses SPACE
 ```
 
 **What to implement:**
@@ -290,17 +348,17 @@ python data/face_capture.py
 # Capture 20 photos for each team member
 ```
 
-### 📝 Implementation Part B: Generate Embeddings
+### 📝 Implementation Part C: Generate Embeddings
 
 **File:** `core/generate_embeddings.py`
 
 **Your Task:** Extract embeddings from collected photos and create reference database.
 
-#### TODO 5: Load Model and Dataset
+#### TODO 8: Load Model and Dataset
 
 ```python
 def generate_reference_embeddings(dataset_path, output_path):
-    # TODO 5: Initialize model and find all person folders
+    # TODO 8: Initialize model and find all person folders
 ```
 
 **What to implement:**
@@ -313,11 +371,11 @@ def generate_reference_embeddings(dataset_path, output_path):
 - Each folder = one person
 - Consistent ordering ensures label IDs match across runs
 
-#### TODO 6: Extract Embeddings for Each Person
+#### TODO 9: Extract Embeddings for Each Person
 
 ```python
 for person_folder in person_folders:
-    # TODO 6: Process all images for this person
+    # TODO 9: Process all images for this person
 ```
 
 **What to implement:**
@@ -351,10 +409,10 @@ emb2_norm = emb2 / np.linalg.norm(emb2)  # Length = 1.0
 similarity = np.dot(emb1_norm, emb2_norm)  # Pure angle comparison!
 ```
 
-#### TODO 7: Save Reference Database
+#### TODO 10: Save Reference Database
 
 ```python
-# TODO 7: Save embeddings array and label names
+# TODO 10: Save embeddings array and label names
 ```
 
 **What to implement:**
@@ -398,59 +456,17 @@ Display Result - Draw name and confidence
 - Similarity comparison: <1ms
 - Total: ~30ms = 30+ FPS ✅
 
-### 📝 Implementation Part A: Face Detection Wrapper
-
-**File:** `utils/face_detector.py`
-
-**Your Task:** Wrap YuNet detector for easy use.
-
-#### TODO 8: Initialize YuNet
-
-```python
-def __init__(self, model_path, conf_threshold=0.7):
-    # TODO 8: Create YuNet face detector
-```
-
-**What to implement:**
-1. Use cv2.FaceDetectorYN.create()
-2. Set model_path, score_threshold, nms_threshold
-3. Default input size (320, 320)
-
-**Reasoning:**
-- YuNet is a fast, accurate face detector
-- score_threshold filters weak detections
-- nms_threshold controls overlap between detections
-
-#### TODO 9: Detect Faces in Frame
-
-```python
-def detect(self, frame):
-    # TODO 9: Detect faces and return bounding boxes
-```
-
-**What to implement:**
-1. Get frame dimensions
-2. Update detector input size: self.detector.setInputSize()
-3. Call self.detector.detect(frame)
-4. Parse results: extract bounding boxes [x, y, w, h]
-5. Return list of bounding boxes
-
-**Reasoning:**
-- Input size must match frame size for accurate detection
-- YuNet returns complex array - we simplify to just boxes
-- Empty list if no faces detected
-
-### 📝 Implementation Part B: Recognition System
+### 📝 Implementation: Recognition System
 
 **File:** `core/face_recognizer.py`
 
 **Your Task:** Implement the complete recognition system.
 
-#### TODO 10: Initialize Recognition System
+#### TODO 11: Initialize Recognition System
 
 ```python
 def __init__(self, model_path, reference_path, labels_path):
-    # TODO 10: Load model, detector, and reference database
+    # TODO 11: Load model, detector, and reference database
 ```
 
 **What to implement:**
@@ -465,11 +481,11 @@ def __init__(self, model_path, reference_path, labels_path):
 - Reference database loaded into memory for fast comparison
 - Threshold can be tuned based on accuracy requirements
 
-#### TODO 11: Recognize Face
+#### TODO 12: Recognize Face
 
 ```python
 def recognize_face(self, face_img):
-    # TODO 11: Extract embedding and find best match
+    # TODO 12: Extract embedding and find best match
 ```
 
 **What to implement:**
@@ -508,11 +524,11 @@ for ref in references:
 # But matrix version is 10x faster!
 ```
 
-#### TODO 12: Main Recognition Loop
+#### TODO 13: Main Recognition Loop
 
 ```python
 def run_webcam(self, camera_id=0):
-    # TODO 12: Main loop for real-time recognition
+    # TODO 13: Main loop for real-time recognition
 ```
 
 **What to implement:**
@@ -543,7 +559,7 @@ python core/face_recognizer.py
 
 ---
 
-## 📦 Phase 4: Deployment (Optional, 2-3 hours)
+## 📦 Phase 4: Deployment (2-3 hours)
 
 ### 🧠 Concept: Edge Deployment
 
@@ -560,81 +576,25 @@ python core/face_recognizer.py
 
 ### 📝 Implementation Part A: ONNX Export
 
-**File:** `deployment/export_onnx.py`
-
-**Your Task:** Export InsightFace model to ONNX format (optional optimization).
-
-#### TODO 13: Export to ONNX
-
-```python
-def export_to_onnx(model_path, output_path):
-    # TODO 13: Export InsightFace model to ONNX
-```
-
-**Note:** InsightFace models can be used directly on Jetson. ONNX export is optional for performance optimization.
-
-**What to implement:**
-1. Load model
-2. Create dummy input tensor
-3. Use torch.onnx.export() or InsightFace's export method
-4. Verify ONNX model loads
-
-**Alternative:** Skip ONNX and use InsightFace Python API directly on Jetson (simpler approach).
-
-### 📝 Implementation Part B: Jetson Inference
-
 **File:** `deployment/jetson_inference.py`
 
-**Your Task:** Adapt recognition system for Jetson Nano.
+**Your Task:** Deploy to Jetson Nano.
 
-#### TODO 14: Jetson-Specific Setup
+**Note:** For most students, you can use `core/face_recognizer.py` directly on Jetson! It works out of the box. See the deployment file for complete step-by-step instructions including:
+- Transferring project to Jetson
+- Installing dependencies
+- Running recognition
+- GPU acceleration (optional)
+- Arduino integration (optional)
 
-```python
-def __init__(self, config_path):
-    # TODO 14: Initialize for Jetson (similar to face_recognizer.py)
-```
+**Deployment Steps (Summary):**
+1. Copy project to Jetson
+2. Install dependencies: `pip3 install -r requirements.txt`
+3. Run: `python3 core/face_recognizer.py` (yes, the same file!)
+4. Optional: Enable GPU with `device='cuda'`
+5. Optional: Add Arduino serial communication
 
-**What to implement:**
-Same as face_recognizer.py but:
-1. Use appropriate device (CPU or GPU based on Jetson model)
-2. May use ONNX model if exported
-3. Optimize for Jetson's architecture
-
-**Reasoning:**
-- Jetson has different hardware (ARM + NVIDIA GPU)
-- May need different batch sizes or input sizes
-- Otherwise, logic is identical to desktop version
-
-#### TODO 15: Arduino Serial Communication
-
-```python
-def send_to_arduino(self, person_name):
-    # TODO 15: Send recognition result via serial
-```
-
-**What to implement:**
-1. Open serial connection (pyserial)
-2. Send formatted message: "PERSON:ben\n" or "UNKNOWN\n"
-3. Handle serial errors gracefully
-
-**Reasoning:**
-- Arduino listens on serial for commands
-- Simple text protocol: "PERSON:name" or "UNKNOWN"
-- Arduino can control LEDs, servos, etc based on recognition
-
-**Test on Jetson:**
-```bash
-# On laptop, copy project to Jetson
-scp -r Facial-Recognition/ jetson@<IP>:~/
-
-# SSH to Jetson
-ssh jetson@<IP>
-cd ~/Facial-Recognition
-
-# Install and run
-pip3 install -r requirements.txt
-python3 deployment/jetson_inference.py
-```
+For complete instructions, see `deployment/jetson_inference.py`
 
 ---
 

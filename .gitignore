@@ -67,3 +67,6 @@ opencv_bootcamp_assets_*/
 
 # System files
 Thumbs.db
+
+# Old files
+archive/

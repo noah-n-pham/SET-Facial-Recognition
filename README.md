@@ -16,8 +16,20 @@ Build a complete real-time facial recognition system using pretrained MobileFace
 pip install -r requirements.txt
 ```
 
-### 2. Start Learning!
+### 2. Verify Installation
+```bash
+python test_installation.py
+```
+Should see: ✅ All dependencies installed successfully!
+
+### 3. Start Learning!
 👉 **Open `LEARNING_GUIDE.md` and follow the step-by-step instructions!**
+
+### 4. Check Progress Anytime
+```bash
+python check_progress.py
+```
+Tracks which TODOs you've completed and what's next.
 
 ## 📚 Learning Approach
 
@@ -48,21 +60,34 @@ This project uses **TODO-based learning**:
 ## 🏗️ Project Structure
 
 ```
-models/
-  └── face_model.py           # Phase 1: Pretrained model wrapper
-
-data/
-  └── face_capture.py         # Phase 2A: Collect photos
-
-core/
-  ├── generate_embeddings.py  # Phase 2B: Build reference database
-  └── face_recognizer.py      # Phase 3: Real-time recognition
-
-utils/
-  └── face_detector.py        # Helper: YuNet wrapper
-
-deployment/                   # Phase 4: Optional
-  └── jetson_inference.py
+📁 Facial-Recognition/
+├── 📄 README.md                    ← Quick overview (you are here!)
+├── 📘 LEARNING_GUIDE.md            ← Complete step-by-step guide (START HERE)
+├── 🔍 check_progress.py            ← Track your TODO completion
+├── ✅ test_installation.py         ← Verify dependencies installed
+├── 📋 requirements.txt             ← Python dependencies
+│
+├── 📁 models/
+│   └── face_model.py               ← Phase 1: Load pretrained model (3 TODOs)
+│
+├── 📁 utils/
+│   └── face_detector.py            ← Phase 2A: YuNet wrapper (2 TODOs)
+│
+├── 📁 data/
+│   └── face_capture.py             ← Phase 2A: Capture photos (2 TODOs)
+│
+├── 📁 core/
+│   ├── generate_embeddings.py     ← Phase 2B: Build database (3 TODOs)
+│   └── face_recognizer.py         ← Phase 3: Real-time system (4 TODOs)
+│
+├── 📁 deployment/
+│   └── jetson_inference.py        ← Phase 4: Jetson deployment guide (optional)
+│
+├── 📁 configs/
+│   └── config.yaml                ← System configuration
+│
+└── 📁 assets/
+    └── face_detection_yunet_*.onnx ← YuNet face detector model
 ```
 
 ## 🎓 Educational Goals

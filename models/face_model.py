@@ -10,6 +10,7 @@ TODOs: 3
 
 import numpy as np
 import cv2
+from insightface.app import FaceAnalysis
 
 
 class FaceEmbeddingModel:
@@ -37,7 +38,9 @@ class FaceEmbeddingModel:
         # - First run will download model files (~100MB)
         # - See InsightFace documentation for FaceAnalysis usage
         
-        raise NotImplementedError("TODO 1: Initialize FaceAnalysis")
+        ctx_id = -1 if device == 'cpu' else 0
+        self.app = FaceAnalysis(name=model_name)
+        self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         
         print("✅ Model loaded!\n")
     
@@ -60,7 +63,7 @@ class FaceEmbeddingModel:
         #
         # Hint: Look up cv2.COLOR_BGR2RGB conversion code
         
-        raise NotImplementedError("TODO 2: Convert BGR to RGB")
+        face_rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
         
         # TODO 3: Detect face and extract embedding
         # ==========================================
@@ -75,7 +78,12 @@ class FaceEmbeddingModel:
         # - Each face object has an .embedding attribute
         # - InsightFace already L2-normalizes embeddings
         
-        raise NotImplementedError("TODO 3: Extract embedding")
+        faces = self.app.get(face_rgb)
+        
+        if len(faces) > 0:
+            return faces[0].embedding
+        
+        return None
     
     def extract_embedding_batch(self, face_imgs):
         """Extract embeddings from multiple images (helper method)."""

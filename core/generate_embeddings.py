@@ -54,7 +54,25 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
     # - Each folder name = person's name
     # - Folder order determines label IDs (first folder = ID 0, etc.)
     
-    raise NotImplementedError("TODO 8: Initialize model and find folders")
+    # Step 1: Initialize the face embedding model
+    model = FaceEmbeddingModel(device='cpu')
+    
+    # Step 2: Convert dataset_path to a Path object
+    dataset_path = Path(dataset_path)
+    
+    # Step 3: Find all subdirectories (person folders)
+    person_dirs = sorted([p for p in dataset_path.iterdir() if p.is_dir()])
+    
+    # Step 4: Check if the list is empty
+    if not person_dirs:
+        print(f"❌ No person folders found in {dataset_path}")
+        return
+    
+    # Step 5: Print summary
+    print(f"✅ Found {len(person_dirs)} people:")
+    for person_dir in person_dirs:
+        image_count = len([f for f in person_dir.iterdir() if f.is_file()])
+        print(f"  - {person_dir.name}: {image_count} images")
     
     reference_embeddings = []
     label_names = []

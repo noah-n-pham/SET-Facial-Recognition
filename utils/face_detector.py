@@ -42,7 +42,14 @@ class FaceDetector:
         #
         # Hint: Look up cv2.FaceDetectorYN.create() in OpenCV docs
         
-        raise NotImplementedError("TODO 4: Create YuNet detector")
+        self.detector = cv2.FaceDetectorYN.create(
+            model=model_path,
+            config="",
+            input_size=(320, 320),
+            score_threshold=conf_threshold,
+            nms_threshold=0.3,
+            top_k=5000
+        )
         
         print("✅ Face detector ready\n")
     
@@ -75,7 +82,27 @@ class FaceDetector:
         # - Use .astype(int) to convert to integers
         # - face[:4] gets first 4 elements (x, y, width, height)
         
-        raise NotImplementedError("TODO 5: Implement detection")
+        # Step 1: Get frame dimensions
+        frame_height, frame_width = frame.shape[:2]
+        
+        # Step 2: Update detector input size
+        self.detector.setInputSize((frame_width, frame_height))
+        
+        # Step 3: Detect faces
+        _, faces = self.detector.detect(frame)
+        
+        # Step 4: If no faces, return empty list
+        if faces is None:
+            return []
+        
+        # Step 5: Extract bounding boxes from all detected faces
+        results = []
+        for face in faces:
+            x, y, w, h = map(int, face[:4])
+            results.append([x, y, w, h])
+        
+        # Step 6: Return results
+        return results
 
 
 # Test code

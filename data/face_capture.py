@@ -44,7 +44,22 @@ class FaceCapture:
         # - Use Path.mkdir() for creating directories
         # - cv2.CAP_PROP_FRAME_WIDTH and cv2.CAP_PROP_FRAME_HEIGHT are OpenCV constants
         
-        raise NotImplementedError("TODO 6: Initialize webcam and detector")
+        # Step 1: Create output directory
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Step 2: Create FaceDetector
+        self.detector = FaceDetector(conf_threshold=0.5)
+        
+        # Step 3: Open webcam
+        self.cap = cv2.VideoCapture(self.camera_id)
+        
+        # Step 4: Check if camera opened
+        if not self.cap.isOpened():
+            raise RuntimeError("Could not open webcam")
+        
+        # Step 5: Set camera resolution
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         
         print(f"✅ Capture tool ready\n")
     
@@ -97,7 +112,81 @@ class FaceCapture:
         # - Use cv2.imwrite() to save images
         # - Color format is BGR: green=(0,255,0), orange=(0,165,255), red=(0,0,255)
         
-        raise NotImplementedError("TODO 7: Implement capture loop")
+        # Step 1: Create person directory
+        clean_name = person_name.lower().replace(' ', '_')
+        person_dir = self.output_dir / clean_name
+        person_dir.mkdir(exist_ok=True)
+        
+        # Step 2: Count existing photos to continue numbering
+        existing_photos = list(person_dir.glob('*.png'))
+        photo_count = len(existing_photos)
+        
+        # Step 3: Create OpenCV window
+        window_name = f"Capture: {person_name}"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        
+        # Step 4: Main capture loop
+        while photo_count < num_photos:
+            # Read and flip frame
+            ret, frame = self.cap.read()
+            if not ret:
+                print("❌ Failed to read from camera")
+                break
+            
+            frame = cv2.flip(frame, 1)
+            
+            # Detect faces
+            faces = self.detector.detect(frame)
+            num_faces = len(faces)
+            
+            # Determine box color based on face count
+            if num_faces == 1:
+                box_color = (0, 255, 0)  # Green - good for capture
+                status_msg = "✓ Ready to capture"
+            elif num_faces > 1:
+                box_color = (0, 165, 255)  # Orange - multiple faces
+                status_msg = "⚠ Multiple faces detected"
+            else:
+                box_color = (0, 0, 255)  # Red - no faces
+                status_msg = "⚠ No face detected"
+            
+            # Draw bounding boxes
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), box_color, 2)
+            
+            # Display photo count
+            cv2.putText(frame, f'Photos: {photo_count}/{num_photos}', (10, 30),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            
+            # Display status message
+            cv2.putText(frame, status_msg, (10, 70),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, box_color, 2)
+            
+            # Show frame
+            cv2.imshow(window_name, frame)
+            
+            # Check for key press
+            key = cv2.waitKey(1) & 0xFF
+            
+            if key == 27:  # ESC
+                print("   Capture stopped by user")
+                break
+            elif key == 32:  # SPACE
+                if num_faces == 1:
+                    # Save photo
+                    photo_path = person_dir / f'{clean_name}_{photo_count}.png'
+                    cv2.imwrite(str(photo_path), frame)
+                    print(f"   📷 Captured: {photo_path.name}")
+                    photo_count += 1
+                else:
+                    print(f"   ⚠️  Cannot capture: {num_faces} faces detected (need exactly 1)")
+        
+        # Step 5: Close window
+        cv2.destroyWindow(window_name)
+        
+        # Step 6: Print summary
+        print(f"\n✅ Captured {photo_count} photos for {person_name}")
+        print(f"   Saved to: {person_dir}\n")
     
     def capture_multiple_people(self):
         """Interactive mode: capture photos for multiple people."""

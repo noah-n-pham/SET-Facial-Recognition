@@ -11,6 +11,9 @@ Time: 2-3 hours
 TODOs: 4
 """
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import cv2
 import numpy as np
 from pathlib import Path
@@ -49,18 +52,32 @@ class FaceRecognizer:
         # ============================================
         # Steps:
         # 1. Create FaceDetector with conf_threshold=0.6, store as self.detector
+        self.detector = FaceDetector(conf_threshold=similarity_threshold)
         # 2. Create FaceEmbeddingModel with device='cpu', store as self.model
+        self.model = FaceEmbeddingModel(device = 'cpu')
         # 3. Load reference embeddings:
         #    - Use np.load() to load from reference_path
         #    - Store as self.reference_embeddings
+        self.reference_embeddings = np.load(reference_path)
         # 4. Load label names:
         #    - Open labels_path and read all lines
+        self.label_names = []
+        with open(labels_path, "r") as file:
+            for i in range(self.reference_embeddings):
+                self.label_names.append(file.readlines())
+
+        for each in self.label_names:
+            print(each)
         #    - Strip whitespace from each line
         #    - Store as list in self.label_names
         # 5. Verify consistency:
         #    - Check len(self.reference_embeddings) == len(self.label_names)
         #    - Raise ValueError if mismatch
-        # 6. Print summary with known people and threshold
+        if not (len(self.reference_embeddings) == len(self.label_names)):
+            print(len(self.reference_embeddings))
+            print(len(self.label_names))
+            raise ValueError("Mismatch between embeddings and labels")
+                # 6. Print summary with known people and threshold
         #
         # Hints:
         # - Use open() with 'r' mode to read file
@@ -82,19 +99,31 @@ class FaceRecognizer:
         
         # TODO 12: Extract embedding and find best match
         # ===============================================
-        # Steps:
-        # 1. Extract embedding from face_img using self.model.extract_embedding()
+        # Steps
         # 2. If embedding is None, return ("Unknown", 0.0)
+        embedding = self.model.extract_embedding(face_img=face_img)
+        if embedding == None:
+            return ("Unknown", 0.0)
         # 3. Compute similarities with all references:
         #    - Use matrix multiplication: embedding @ self.reference_embeddings.T
         #    - This gives similarity score for each person
+        similarities = []
+
+        for each in self.reference_embeddings:
+            similarities.append(embedding @ each)
         # 4. Find best match:
         #    - Use np.argmax() to get index of highest similarity
         #    - Get similarity value at that index
         #    - Get name from self.label_names at that index
+        max_index = np.argmax(similarities)
+        similarity = similarities[max_index]
         # 5. Check threshold:
         #    - If similarity >= self.similarity_threshold: return (name, similarity)
         #    - Otherwise: return ("Unknown", similarity)
+        if similarity >= self.similarity_threshold:
+            return (self.label_names[max_index], similarity)
+        else:
+            return ("Unknown", similarity)
         # 6. Convert similarity to float before returning
         #
         # Hints:
@@ -102,7 +131,6 @@ class FaceRecognizer:
         # - .T transposes the array
         # - Embeddings are normalized, so dot product = cosine similarity
         
-        raise NotImplementedError("TODO 12: Implement recognition")
     
     def run_webcam(self, camera_id=0):
         """Run real-time recognition on webcam. Press ESC to exit."""
@@ -115,6 +143,51 @@ class FaceRecognizer:
         # TODO 13: Implement webcam capture and recognition loop
         # =======================================================
         # Steps:
+        
+        self.cap = cv2.VideoCapture(camera_id)
+        if self.cap.isOpened():
+            self.window = cv2.namedWindow("Face Recognizer Window")
+            fps = 0
+            frame_count = 0
+            start_time = time.time()
+            while(True):
+                ret,frame = self.cap.read()
+                if not ret:
+                    break
+                frame = cv2.flip(frame,1)
+                faces = self.detector.detect(frame)
+                for (x,y,w,h) in faces:
+                    padding = int(0.1 * max(w, h))
+                    x1 = max(0,x-padding)
+                    x2 = min(frame.shape[1], x + w + padding)
+                    y1 = max(0,y-padding)
+                    y2 = min(frame.shape[0], y + h + padding)
+                    
+                    cropped_face = frame[y1:y2,x1:x2]
+                    
+                    name, similarity = self.reecognize_face(cropped_face)
+                    color = (0,0,0)
+                    if name != "Unknown":
+                        color = (0,255,0)
+                    else:
+                        color = (255,0,0)
+                    cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
+                    label = f'{name} ({similarity:.2f})'
+                    # draw rectange if needed cv2.rectangle
+                    cv2.putText(frame,label,(x1,y1-5),cv2.FONT_HERSHEY_SIMPLEX,0.5,color)
+                frame_count+=1
+                if(frame_count % 10 == 0):
+                    elapsed = time.time()
+                    fps = 10 / elapsed
+                    start_time = time.time()
+                cv2.putText(frame,f'FPS: {fps:.1f}',(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.75,(0,0,0),2)
+                cv2.imshow("Face Recognizer Window", frame)
+                if(cv2.waitKey(1) & 0xFF == 27):
+                    break
+            self.cap.release()
+            cv2.destroyAllWindows()
+                
+            
         # 1. Open webcam with cv2.VideoCapture(camera_id)
         # 2. Check if opened successfully
         # 3. Create window with cv2.namedWindow()
@@ -154,7 +227,7 @@ class FaceRecognizer:
         # - cv2.FILLED for filled rectangle
         # - time.time() for FPS calculation
         
-        raise NotImplementedError("TODO 13: Implement webcam loop")
+        #raise NotImplementedError("TODO 13: Implement webcam loop")
 
 
 # Run recognizer

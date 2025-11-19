@@ -11,6 +11,9 @@ Time: 30-45 minutes
 TODOs: 3
 """
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import cv2
 import numpy as np
 from pathlib import Path
@@ -20,6 +23,7 @@ import sys
 sys.path.append('.')
 from models.face_model import FaceEmbeddingModel
 
+MAX_NUM_IMG = 100
 
 def generate_reference_embeddings(dataset_path='data/raw/Dataset',
                                    output_dir='models',
@@ -79,8 +83,25 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
     
     # TODO 9: Extract and average embeddings for each person
     # =======================================================
+    for person_dir in person_dirs:
+        label_names.append(person_dir.name)
+        person_embeddings = []
+        for i in range(MAX_NUM_IMG):
+            filePath = Path(f'{person_dir}_{i}.png')
+            if(filePath.is_file()):
+                image = cv2.imreadrea(filePath)
+                embedding = model.extract_embedding(image)
+                if (embedding != None):
+                    person_embeddings.append(embedding)
+        
+        embeddings_average = np.mean(person_embeddings, axis=0)
+        reference_embeddings.append(np.linalg.norm(embeddings_average))
+        print(f'✅ Finished {person_dir.name}')
+        
+           
     # For each person folder:
-    # 1. Get person name from folder.name
+    
+    # 1. Get person name from folder.named
     # 2. Add name to label_names list
     # 3. Find all .png and .jpg files in folder
     # 4. Limit to max_images
@@ -101,15 +122,21 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
     # - Must re-normalize after averaging!
     # - Skip person if no valid embeddings extracted
     
-    raise NotImplementedError("TODO 9: Extract and average embeddings")
     
     # TODO 10: Save reference database
     # =================================
+
+    
     # Steps:
     # 1. Convert reference_embeddings list to numpy array with dtype=np.float32
-    # 2. Create output directory with Path.mkdir()
+    embeddings = np.array(reference_embeddings, dtype=np.float32)
+    
+    np.save(f"{output_dir}/reference_embeddings.npy", embeddings)
     # 3. Save embeddings array:
     #    - Use np.save() to save to 'models/reference_embeddings.npy'
+    with open(f"{output_dir}/label_names.txt", "w") as file:
+        for each in label_names:
+            file.write(each + "\n")
     # 4. Save label names to text file:
     #    - Open 'models/label_names.txt' for writing
     #    - Write each name on a new line
@@ -118,12 +145,14 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
     #    - Array shape
     #    - List of people
     #
+    # print(f"Embeddings saved to: {}")
+    # print(f"People: {label_names}")
     # Hints:
     # - np.array() converts list to array
     # - Use 'w' mode for writing text file
     # - Write each name with f.write(f"{name}\n")
     
-    raise NotImplementedError("TODO 10: Save reference database")
+    # raise NotImplementedError("TODO 10: Save reference database")
 
 
 # Run generator

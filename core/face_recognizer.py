@@ -63,8 +63,8 @@ class FaceRecognizer:
         #    - Open labels_path and read all lines
         self.label_names = []
         with open(labels_path, "r") as file:
-            for i in range(self.reference_embeddings):
-                self.label_names.append(file.readlines())
+            for i in range(len(self.reference_embeddings)):
+                self.label_names.append(file.readline().strip())
 
         for each in self.label_names:
             print(each)
@@ -84,7 +84,7 @@ class FaceRecognizer:
         # - Use line.strip() to remove whitespace
         # - Arrays loaded with np.load() are already numpy arrays
         
-        raise NotImplementedError("TODO 11: Load models and database")
+        #raise NotImplementedError("TODO 11: Load models and database")
     
     def recognize_face(self, face_img):
         """

@@ -89,7 +89,7 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
         for i in range(MAX_NUM_IMG):
             filePath = Path(f'{person_dir}_{i}.png')
             if(filePath.is_file()):
-                image = cv2.imreadrea(filePath)
+                image = cv2.imread(filePath)
                 embedding = model.extract_embedding(image)
                 if (embedding != None):
                     person_embeddings.append(embedding)

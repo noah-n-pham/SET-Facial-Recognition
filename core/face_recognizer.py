@@ -165,7 +165,7 @@ class FaceRecognizer:
                     
                     cropped_face = frame[y1:y2,x1:x2]
                     
-                    name, similarity = self.reecognize_face(cropped_face)
+                    name, similarity = self.recognize_face(cropped_face)
                     color = (0,0,0)
                     if name != "Unknown":
                         color = (0,255,0)

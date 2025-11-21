@@ -83,20 +83,51 @@ def generate_reference_embeddings(dataset_path='data/raw/Dataset',
     
     # TODO 9: Extract and average embeddings for each person
     # =======================================================
-    for person_dir in person_dirs:
-        label_names.append(person_dir.name)
-        person_embeddings = []
-        for i in range(MAX_NUM_IMG):
-            filePath = Path(f'{person_dir}_{i}.png')
-            if(filePath.is_file()):
-                image = cv2.imread(filePath)
-                embedding = model.extract_embedding(image)
-                if (embedding != None):
-                    person_embeddings.append(embedding)
+    for person_dir in tqdm(person_dirs, desc="Processing people"):
+        # 1. Get person name from folder name
+        person_name = person_dir.name
         
-        embeddings_average = np.mean(person_embeddings, axis=0)
-        reference_embeddings.append(np.linalg.norm(embeddings_average))
-        print(f'✅ Finished {person_dir.name}')
+        # 2. Add name to label_names list
+        label_names.append(person_name)
+        
+        # 3. Find all .png and .jpg files in folder
+        image_files = list(person_dir.glob('*.png')) + list(person_dir.glob('*.jpg'))
+        
+        # 4. Limit to max_images
+        image_files = image_files[:max_images]
+        
+        # 5. Loop through image files and extract embeddings
+        person_embeddings = []
+        for img_path in image_files:
+            # Load image
+            image = cv2.imread(str(img_path))
+            if image is None:
+                continue
+            
+            # Extract embedding
+            embedding = model.extract_embedding(image)
+            
+            # If embedding is not None, add to person_embeddings list
+            if embedding is not None:
+                person_embeddings.append(embedding)
+        
+        # 6. Check if person_embeddings is empty (no faces detected)
+        if len(person_embeddings) == 0:
+            print(f"⚠️  No valid embeddings for {person_name}, skipping...")
+            label_names.pop()  # Remove the name we just added
+            continue
+        
+        # 7. Average embeddings
+        avg_embedding = np.mean(person_embeddings, axis=0)
+        
+        # 8. Re-normalize averaged embedding
+        normalized_embedding = avg_embedding / np.linalg.norm(avg_embedding)
+        
+        # 9. Append normalized embedding to reference_embeddings
+        reference_embeddings.append(normalized_embedding)
+        
+        # 10. Print progress
+        print(f'✅ {person_name}: {len(person_embeddings)} embeddings averaged')
         
            
     # For each person folder:

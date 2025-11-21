@@ -174,13 +174,13 @@ class FaceRecognizer:
                     cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
                     label = f'{name} ({similarity:.2f})'
                     # draw rectange if needed cv2.rectangle
-                    cv2.putText(frame,label,(x1,y1-5),cv2.FONT_HERSHEY_SIMPLEX,0.5,color)
+                    cv2.putText(frame,label,(x1,y1-10),cv2.FONT_HERSHEY_SIMPLEX,0.6,color,2)
                 frame_count+=1
                 if(frame_count % 10 == 0):
-                    elapsed = time.time()
+                    elapsed = time.time() - start_time
                     fps = 10 / elapsed
                     start_time = time.time()
-                cv2.putText(frame,f'FPS: {fps:.1f}',(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.75,(0,0,0),2)
+                cv2.putText(frame,f'FPS: {fps:.1f}',(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.75,(0,255,0),2)
                 cv2.imshow("Face Recognizer Window", frame)
                 if(cv2.waitKey(1) & 0xFF == 27):
                     break
@@ -246,7 +246,10 @@ if __name__ == '__main__':
             labels_path=str(labels_path),
             similarity_threshold=0.6
         )
-        recognizer.run_webcam()
+        # camera_id=0 is default camera (may be iPhone with Continuity Camera)
+        # camera_id=1 is typically built-in webcam on macOS
+        # Change to camera_id=1 if iPhone is activating instead of computer webcam
+        recognizer.run_webcam(camera_id=1)
         
     except NotImplementedError as e:
         print(f"\n❌ {e}")

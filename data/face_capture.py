@@ -220,7 +220,8 @@ class FaceCapture:
 # Run capture tool
 if __name__ == '__main__':
     try:
-        capturer = FaceCapture()
+        # camera_id=1 is typically built-in webcam on macOS (camera_id=0 may be iPhone with Continuity Camera)
+        capturer = FaceCapture(camera_id=1)
         capturer.capture_multiple_people()
     except NotImplementedError as e:
         print(f"❌ {e}")

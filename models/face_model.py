@@ -81,7 +81,12 @@ class FaceEmbeddingModel:
         faces = self.app.get(face_rgb)
         
         if len(faces) > 0:
-            return faces[0].embedding
+            embedding = faces[0].embedding
+            # Explicitly normalize to unit length for cosine similarity
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = embedding / norm
+            return embedding
         
         return None
     

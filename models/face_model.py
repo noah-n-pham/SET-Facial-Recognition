@@ -30,7 +30,7 @@ class FaceEmbeddingModel:
         # ==================================================
         # Import FaceAnalysis from insightface.app
         # Create a FaceAnalysis instance with name=model_name
-        # Call .prepare() with ctx_id (-1 for CPU, 0 for GPU) and det_size=(640, 640)
+        # Call .prepare() with ctx_id (-1 for CPU, 0 for GPU) and det_size=(224, 224)
         # Store the instance as self.app
         #
         # Hints:

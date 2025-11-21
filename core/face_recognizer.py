@@ -102,7 +102,7 @@ class FaceRecognizer:
         # Steps
         # 2. If embedding is None, return ("Unknown", 0.0)
         embedding = self.model.extract_embedding(face_img=face_img)
-        if embedding == None:
+        if embedding is None:
             return ("Unknown", 0.0)
         # 3. Compute similarities with all references:
         #    - Use matrix multiplication: embedding @ self.reference_embeddings.T

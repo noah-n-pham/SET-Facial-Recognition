@@ -40,7 +40,7 @@ class FaceEmbeddingModel:
         
         ctx_id = -1 if device == 'cpu' else 0
         self.app = FaceAnalysis(name=model_name)
-        self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
+        self.app.prepare(ctx_id=ctx_id, det_size=(224, 224))
         
         print("✅ Model loaded!\n")
     

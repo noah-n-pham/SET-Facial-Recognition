@@ -173,11 +173,35 @@ class FaceCapture:
                 break
             elif key == 32:  # SPACE
                 if num_faces == 1:
-                    # Save photo
-                    photo_path = person_dir / f'{clean_name}_{photo_count}.png'
-                    cv2.imwrite(str(photo_path), frame)
-                    print(f"   📷 Captured: {photo_path.name}")
-                    photo_count += 1
+                    # Get the face bounding box
+                    x, y, w, h = faces[0]
+                    
+                    # Add padding around face (20% on each side)
+                    padding = int(0.2 * max(w, h))
+                    x1 = max(0, x - padding)
+                    y1 = max(0, y - padding)
+                    x2 = min(frame.shape[1], x + w + padding)
+                    y2 = min(frame.shape[0], y + h + padding)
+                    
+                    # Crop face with padding
+                    face_crop = frame[y1:y2, x1:x2]
+                    
+                    # Ensure minimum size (300x300 for better detection)
+                    if face_crop.shape[0] >= 100 and face_crop.shape[1] >= 100:
+                        # Resize to reasonable size if needed
+                        if face_crop.shape[0] < 300 or face_crop.shape[1] < 300:
+                            scale = max(300 / face_crop.shape[0], 300 / face_crop.shape[1])
+                            new_w = int(face_crop.shape[1] * scale)
+                            new_h = int(face_crop.shape[0] * scale)
+                            face_crop = cv2.resize(face_crop, (new_w, new_h))
+                        
+                        # Save photo
+                        photo_path = person_dir / f'{clean_name}_{photo_count}.png'
+                        cv2.imwrite(str(photo_path), face_crop)
+                        print(f"   📷 Captured: {photo_path.name} ({face_crop.shape[1]}x{face_crop.shape[0]})")
+                        photo_count += 1
+                    else:
+                        print(f"   ⚠️  Face too small: {face_crop.shape}")
                 else:
                     print(f"   ⚠️  Cannot capture: {num_faces} faces detected (need exactly 1)")
         

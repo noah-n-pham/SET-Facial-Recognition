@@ -130,10 +130,101 @@ class FaceRecognizer:
         # - @ operator does matrix multiplication
         # - .T transposes the array
         # - Embeddings are normalized, so dot product = cosine similarity
-        
-    
+
+    #Optimized Run webcam function
     def run_webcam(self, camera_id=0):
         """Run real-time recognition on webcam. Press ESC to exit."""
+        
+        print("="*70)
+        print("Starting Real-Time Recognition")
+        print("="*70)
+        print("Press ESC to exit\n")
+        people_dict = []
+        # TODO 13: Implement webcam capture and recognition loop
+        # =======================================================
+        # Steps:
+        
+        def withinThreshold(originalValue, newValue, threshhold):
+            if newValue > originalValue - threshhold and newValue < originalValue + threshhold:
+                return True
+            return False
+        
+        self.cap = cv2.VideoCapture(camera_id)
+        if self.cap.isOpened():
+            self.window = cv2.namedWindow("Face Recognizer Window")
+            fps = 0
+            frame_count = 0
+            start_time = time.time()
+            while(True):
+                ret,frame = self.cap.read()
+                if not ret:
+                    break
+                frame = cv2.flip(frame,1)
+                faces = self.detector.detect(frame)
+                for (x,y,w,h) in faces:
+
+                    detectFace = False
+                    threshHold = 20
+                    
+                    index = 0
+                    for each in people_dict:
+                        if withinThreshold(each["x"], x, threshHold):
+                            if withinThreshold(each["y"], y, threshHold):
+                                each["x"] = x
+                                each["y"] = y
+                                each["keep"] = True
+                                break
+                        index += 1
+                    else:
+                        detectFace = True
+
+                    
+                    padding = int(0.1 * max(w, h))
+                    x1 = max(0,x-padding)
+                    x2 = min(frame.shape[1], x + w + padding)
+                    y1 = max(0,y-padding)
+                    y2 = min(frame.shape[0], y + h + padding)
+                    
+                    cropped_face = frame[y1:y2,x1:x2]
+
+                    if detectFace:
+                        name, similarity = self.recognize_face(cropped_face)
+                    else: 
+                        name = people_dict[index]["name"]
+                        similarity = people_dict[index]["similarity"]
+                        
+                    color = (0,0,0)
+                    if name != "Unknown":
+                        people_dict.append({"x":x,"y":y,"name":name,"similarity":similarity, "keep":True})
+                        color = (0,255,0)
+                    else:
+                        color = (255,0,0)
+                    cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
+                    label = f'{name} ({similarity:.2f})'
+                    # draw rectange if needed cv2.rectangle
+                    cv2.putText(frame,label,(x1,y1-10),cv2.FONT_HERSHEY_SIMPLEX,0.6,color,2)
+
+                for i in range(len(people_dict) - 1, -1, -1):
+                    if people_dict[i]["keep"] is False:
+                        del people_dict[i]
+                    else:
+                        people_dict[i]["keep"] = False
+
+                frame_count+=1
+                if(frame_count % 10 == 0):
+                    elapsed = time.time() - start_time
+                    fps = 10 / elapsed
+                    start_time = time.time()
+                cv2.putText(frame,f'FPS: {fps:.1f}',(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.75,(0,255,0),2)
+                cv2.imshow("Face Recognizer Window", frame)
+                if(cv2.waitKey(1) & 0xFF == 27):
+                    break
+            self.cap.release()
+            cv2.destroyAllWindows()
+                
+    """
+    def run_webcam(self, camera_id=0):
+        #Run real-time recognition on webcam. Press ESC to exit.
         
         print("="*70)
         print("Starting Real-Time Recognition")
@@ -228,7 +319,8 @@ class FaceRecognizer:
         # - time.time() for FPS calculation
         
         #raise NotImplementedError("TODO 13: Implement webcam loop")
-
+"""
+    
 
 # Run recognizer
 if __name__ == '__main__':

@@ -198,6 +198,7 @@ class FaceRecognizer:
                         people_dict.append({"x":x,"y":y,"name":name,"similarity":similarity, "keep":True})
                         color = (0,255,0)
                     else:
+                        people_dict.append({"x":x,"y":y,"name":name,"similarity":similarity, "keep":True})
                         color = (255,0,0)
                     cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
                     label = f'{name} ({similarity:.2f})'

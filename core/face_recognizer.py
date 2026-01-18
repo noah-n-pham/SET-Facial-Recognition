@@ -130,101 +130,9 @@ class FaceRecognizer:
         # - @ operator does matrix multiplication
         # - .T transposes the array
         # - Embeddings are normalized, so dot product = cosine similarity
-
-    #Optimized Run webcam function
-    def run_webcam(self, camera_id=0):
-        """Run real-time recognition on webcam. Press ESC to exit."""
         
-        print("="*70)
-        print("Starting Real-Time Recognition")
-        print("="*70)
-        print("Press ESC to exit\n")
-        people_dict = []
-        # TODO 13: Implement webcam capture and recognition loop
-        # =======================================================
-        # Steps:
-        
-        def withinThreshold(originalValue, newValue, threshhold):
-            if newValue > originalValue - threshhold and newValue < originalValue + threshhold:
-                return True
-            return False
-        
-        self.cap = cv2.VideoCapture(camera_id)
-        if self.cap.isOpened():
-            self.window = cv2.namedWindow("Face Recognizer Window")
-            fps = 0
-            frame_count = 0
-            start_time = time.time()
-            while(True):
-                ret,frame = self.cap.read()
-                if not ret:
-                    break
-                frame = cv2.flip(frame,1)
-                faces = self.detector.detect(frame)
-                for (x,y,w,h) in faces:
-
-                    detectFace = False
-                    threshHold = 20
-                    
-                    index = 0
-                    for each in people_dict:
-                        if withinThreshold(each["x"], x, threshHold):
-                            if withinThreshold(each["y"], y, threshHold):
-                                each["x"] = x
-                                each["y"] = y
-                                each["keep"] = True
-                                break
-                        index += 1
-                    else:
-                        detectFace = True
-
-                    
-                    padding = int(0.1 * max(w, h))
-                    x1 = max(0,x-padding)
-                    x2 = min(frame.shape[1], x + w + padding)
-                    y1 = max(0,y-padding)
-                    y2 = min(frame.shape[0], y + h + padding)
-                    
-                    cropped_face = frame[y1:y2,x1:x2]
-
-                    if detectFace:
-                        name, similarity = self.recognize_face(cropped_face)
-                    else: 
-                        name = people_dict[index]["name"]
-                        similarity = people_dict[index]["similarity"]
-                        
-                    color = (0,0,0)
-                    if name != "Unknown":
-                        people_dict.append({"x":x,"y":y,"name":name,"similarity":similarity, "keep":True})
-                        color = (0,255,0)
-                    else:
-                        people_dict.append({"x":x,"y":y,"name":name,"similarity":similarity, "keep":True})
-                        color = (255,0,0)
-                    cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
-                    label = f'{name} ({similarity:.2f})'
-                    # draw rectange if needed cv2.rectangle
-                    cv2.putText(frame,label,(x1,y1-10),cv2.FONT_HERSHEY_SIMPLEX,0.6,color,2)
-
-                for i in range(len(people_dict) - 1, -1, -1):
-                    if people_dict[i]["keep"] is False:
-                        del people_dict[i]
-                    else:
-                        people_dict[i]["keep"] = False
-
-                frame_count+=1
-                if(frame_count % 10 == 0):
-                    elapsed = time.time() - start_time
-                    fps = 10 / elapsed
-                    start_time = time.time()
-                cv2.putText(frame,f'FPS: {fps:.1f}',(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.75,(0,255,0),2)
-                cv2.imshow("Face Recognizer Window", frame)
-                if(cv2.waitKey(1) & 0xFF == 27):
-                    break
-            self.cap.release()
-            cv2.destroyAllWindows()
-                
-    """
-    def run_webcam(self, camera_id=0):
+    
+    def run_webcam0(self, camera_id=0):
         #Run real-time recognition on webcam. Press ESC to exit.
         
         print("="*70)
@@ -278,50 +186,543 @@ class FaceRecognizer:
                     break
             self.cap.release()
             cv2.destroyAllWindows()
-                
-            
-        # 1. Open webcam with cv2.VideoCapture(camera_id)
-        # 2. Check if opened successfully
-        # 3. Create window with cv2.namedWindow()
-        # 4. Initialize FPS tracking variables (fps=0, frame_count=0, start_time)
-        # 
-        # 5. Main loop (try-except-finally for cleanup):
-        #    While True:
-        #    a. Read frame from camera
-        #    b. Flip frame horizontally
-        #    c. Detect faces using self.detector.detect()
-        #    
-        #    d. For each detected face (x, y, w, h):
-        #       - Add 10% padding around face
-        #       - Ensure coordinates are within frame bounds
-        #       - Crop face region from frame
-        #       - Call self.recognize_face() on cropped face
-        #       - Choose color: green if recognized, red if unknown
-        #       - Draw rectangle around face
-        #       - Create label with name and similarity score
-        #       - Draw filled rectangle for label background
-        #       - Put text label above face
-        #    
-        #    e. Calculate FPS (every 10 frames)
-        #    f. Display FPS on frame
-        #    g. Show frame with cv2.imshow()
-        #    h. Check for ESC key (27) to exit
-        # 
-        # 6. In finally block: release camera and destroy windows
-        # 7. Print summary with frame count and average FPS
-        #
-        # Hints:
-        # - Use cv2.flip(frame, 1) for mirror effect
-        # - Padding: int(0.1 * max(w, h))
-        # - Use max(0, x) and min(x, frame_width) for bounds
-        # - Green=(0,255,0), Red=(0,0,255) in BGR
-        # - cv2.getTextSize() for label dimensions
-        # - cv2.FILLED for filled rectangle
-        # - time.time() for FPS calculation
-        
-        #raise NotImplementedError("TODO 13: Implement webcam loop")
-"""
+
+    def run_webcam1(self, camera_id=0):
+
+        print("="*70)
+        print("Starting Real-Time Recognition")
+        print("="*70)
+        print("Press ESC to exit\n")
+
+        people_dict = []
+
+        def withinThreshold(originalValue, newValue, threshold):
+            return abs(originalValue - newValue) <= threshold
+
+        self.cap = cv2.VideoCapture(camera_id)
+        if self.cap.isOpened():
+            self.window = cv2.namedWindow("Face Recognizer Window")
+            fps = 0
+            frame_count = 0
+            start_time = time.time()
+
+            while True:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+
+                frame = cv2.flip(frame, 1)
+                faces = self.detector.detect(frame)
+
+                for (x, y, w, h) in faces:
+
+                    threshold = 15
+                    matched_index = None
+
+                    # Try to match with existing tracked faces
+                    for i, each in enumerate(people_dict):
+                        if withinThreshold(each["x"], x, threshold) and withinThreshold(each["y"], y, threshold):
+                            matched_index = i
+                            break
+
+                    # Crop face with padding
+                    padding = int(0.1 * max(w, h))
+                    x1 = max(0, x - padding)
+                    y1 = max(0, y - padding)
+                    x2 = min(frame.shape[1], x + w + padding)
+                    y2 = min(frame.shape[0], y + h + padding)
+                    cropped_face = frame[y1:y2, x1:x2]
+
+                    # Recognize or reuse previous identity
+                    if matched_index is None:
+                        # New face → recognize
+                        name, similarity = self.recognize_face(cropped_face)
+                        people_dict.append({
+                            "x": x,
+                            "y": y,
+                            "name": name,
+                            "similarity": similarity,
+                            "keep": True
+                        })
+
+                    else:
+                        person = people_dict[matched_index]
+                        person["x"] = x
+                        person["y"] = y
+                        person["keep"] = True
+
+                        if person["name"] == "Unknown":
+                            # Unknown face → keep trying to recognize every frame
+                            name, similarity = self.recognize_face(cropped_face)
+                            person["name"] = name
+                            person["similarity"] = similarity
+                        else:
+                            # Known face → reuse stored identity
+                            name = person["name"]
+                            similarity = person["similarity"]
+
+                    # Draw bounding box + label
+                    color = (0, 255, 0) if name != "Unknown" else (255, 0, 0)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    label = f"{name} ({similarity:.2f})"
+                    cv2.putText(frame, label, (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+                # Cleanup: remove faces not seen this frame
+                for i in range(len(people_dict) - 1, -1, -1):
+                    if not people_dict[i]["keep"]:
+                        del people_dict[i]
+                    else:
+                        people_dict[i]["keep"] = False
+
+                # FPS calculation
+                frame_count += 1
+                if frame_count % 10 == 0:
+                    elapsed = time.time() - start_time
+                    fps = 10 / elapsed
+                    start_time = time.time()
+
+                cv2.putText(frame, f'FPS: {fps:.1f}', (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
+                cv2.imshow("Face Recognizer Window", frame)
+
+                if cv2.waitKey(1) & 0xFF == 27:  # ESC
+                    break
+
+            self.cap.release()
+            cv2.destroyAllWindows()
+
+
+    def run_webcam2(self, camera_id=0):
     
+        import numpy as np
+        from filterpy.kalman import KalmanFilter
+
+        print("="*70)
+        print("Starting Real-Time Recognition (Kalman Tracking)")
+        print("="*70)
+        print("Press ESC to exit\n")
+
+    # ---------------------------------------------------------
+    # Create a Kalman filter for a new face track
+    # ---------------------------------------------------------
+        def create_kalman(x, y, w, h):
+            kf = KalmanFilter(dim_x=7, dim_z=4)
+
+            # State transition matrix
+            kf.F = np.array([
+            [1,0,0,0,1,0,0],
+            [0,1,0,0,0,1,0],
+            [0,0,1,0,0,0,1],
+            [0,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0],
+            [0,0,0,0,0,1,0],
+            [0,0,0,0,0,0,1]
+            ])
+
+        # Measurement matrix
+            kf.H = np.array([
+            [1,0,0,0,0,0,0],
+            [0,1,0,0,0,0,0],
+            [0,0,1,0,0,0,0],
+            [0,0,0,1,0,0,0]
+            ])
+
+        # Convert bounding box to Kalman state
+            cx = x + w/2
+            cy = y + h/2
+            s = w * h
+            r = w / float(h)
+
+            kf.x[:4] = np.array([[cx], [cy], [s], [r]])
+            kf.P *= 10
+            return kf
+
+    # ---------------------------------------------------------
+    # IoU for matching detections to predicted tracks
+    # ---------------------------------------------------------
+        def iou(bb1, bb2):
+            x1, y1, w1, h1 = bb1
+            x2, y2, w2, h2 = bb2
+
+            xa = max(x1, x2)
+            ya = max(y1, y2)
+            xb = min(x1 + w1, x2 + w2)
+            yb = min(y1 + h1, y2 + h2)
+
+            inter = max(0, xb - xa) * max(0, yb - ya)
+            union = w1*h1 + w2*h2 - inter
+            return inter / union if union > 0 else 0
+
+    # ---------------------------------------------------------
+    # Track structure
+    # ---------------------------------------------------------
+        tracks = []
+        next_id = 0
+
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            print("Error: Could not open webcam.")
+            return
+
+        cv2.namedWindow("Face Recognizer Window")
+
+        fps = 0
+        frame_count = 0
+        start_time = time.time()
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame = cv2.flip(frame, 1)
+            detections = self.detector.detect(frame)
+
+        # ---------------------------------------------------------
+        # 1. PREDICT all tracks
+        # ---------------------------------------------------------
+            for tr in tracks:
+                tr["kf"].predict()
+                tr["ttl"] -= 1
+
+        # ---------------------------------------------------------
+        # 2. MATCH detections to tracks using IoU
+        # ---------------------------------------------------------
+            unmatched_dets = []
+            unmatched_tracks = list(range(len(tracks)))
+
+            for det in detections:
+                x, y, w, h = det
+                best_iou = 0
+                best_track = None
+
+                for ti in unmatched_tracks:
+                    kf = tracks[ti]["kf"]
+
+                # Convert Kalman state to bounding box
+                    cx, cy, s, r = kf.x[:4].reshape(-1)
+                    pw = np.sqrt(s * r)
+                    ph = s / pw
+                    px = cx - pw/2
+                    py = cy - ph/2
+
+                    track_box = (px, py, pw, ph)
+                    det_box = (x, y, w, h)
+
+                    score = iou(det_box, track_box)
+                    if score > best_iou:
+                        best_iou = score
+                        best_track = ti
+
+                if best_iou > 0.3:
+                # Match found
+                    unmatched_tracks.remove(best_track)
+
+                # Update Kalman filter
+                    cx = x + w/2
+                    cy = y + h/2
+                    s = w*h
+                    r = w/float(h)
+                    tracks[best_track]["kf"].update([cx, cy, s, r])
+
+                # Re-recognize if unknown
+                    if tracks[best_track]["name"] == "Unknown":
+                        name, sim = self.recognize_face(frame[y:y+h, x:x+w])
+                        tracks[best_track]["name"] = name
+                        tracks[best_track]["sim"] = sim
+
+                    tracks[best_track]["ttl"] = 10
+                else:
+                    unmatched_dets.append(det)
+
+        # ---------------------------------------------------------
+        # 3. CREATE new tracks for unmatched detections
+        # ---------------------------------------------------------
+            for (x, y, w, h) in unmatched_dets:
+                name, sim = self.recognize_face(frame[y:y+h, x:x+w])
+                kf = create_kalman(x, y, w, h)
+
+                tracks.append({
+                "id": next_id,
+                "kf": kf,
+                "name": name,
+                "sim": sim,
+                "ttl": 10
+                })
+                next_id += 1
+
+        # ---------------------------------------------------------
+        # 4. REMOVE dead tracks
+        # ---------------------------------------------------------
+            tracks = [t for t in tracks if t["ttl"] > 0]
+
+        # ---------------------------------------------------------
+        # 5. DRAW results
+        # ---------------------------------------------------------
+            for tr in tracks:
+                cx, cy, s, r = tr["kf"].x[:4].reshape(-1)
+                w = np.sqrt(s * r)
+                h = s / w
+                x = int(cx - w/2)
+                y = int(cy - h/2)
+
+                color = (0,255,0) if tr["name"] != "Unknown" else (0,0,255)
+                cv2.rectangle(frame, (x,y), (x+int(w), y+int(h)), color, 2)
+                label = f'ID {tr["id"]}: {tr["name"]} ({tr["sim"]:.2f})'
+                cv2.putText(frame, label, (x, y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+        # FPS
+            frame_count += 1
+            if frame_count % 10 == 0:
+                elapsed = time.time() - start_time
+                fps = 10 / elapsed
+                start_time = time.time()
+
+            cv2.putText(frame, f'FPS: {fps:.1f}', (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,255,0), 2)
+
+            cv2.imshow("Face Recognizer Window", frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+    def run_webcam3(self, camera_id=0):
+        import numpy as np
+        from filterpy.kalman import KalmanFilter
+        from concurrent.futures import ThreadPoolExecutor
+
+        print("="*70)
+        print("Starting Real-Time Recognition (Kalman + MT + Smoothing)")
+        print("="*70)
+        print("Press ESC to exit\n")
+
+        def create_kalman(x, y, w, h):
+                kf = KalmanFilter(dim_x=7, dim_z=4)
+
+                kf.F = np.array([
+                    [1,0,0,0,1,0,0],
+                    [0,1,0,0,0,1,0],
+                    [0,0,1,0,0,0,1],
+                    [0,0,0,1,0,0,0],
+                    [0,0,0,0,1,0,0],
+                    [0,0,0,0,0,1,0],
+                    [0,0,0,0,0,0,1]
+                ])
+
+                kf.H = np.array([
+                    [1,0,0,0,0,0,0],
+                    [0,1,0,0,0,0,0],
+                    [0,0,1,0,0,0,0],
+                    [0,0,0,1,0,0,0]
+                ])
+
+                cx = x + w/2
+                cy = y + h/2
+                s = max(1, w * h)
+                r = max(0.1, w / float(h))
+
+                kf.x[:4] = np.array([[cx], [cy], [s], [r]])
+                kf.P *= 10
+                return kf
+
+        def iou(bb1, bb2):
+                x1, y1, w1, h1 = bb1
+                x2, y2, w2, h2 = bb2
+
+                xa = max(x1, x2)
+                ya = max(y1, y2)
+                xb = min(x1 + w1, x2 + w2)
+                yb = min(y1 + h1, y2 + h2)
+
+                inter = max(0, xb - xa) * max(0, yb - ya)
+                union = w1*h1 + w2*h2 - inter
+                return inter / union if union > 0 else 0
+
+        def clamp_box(x, y, w, h, frame):
+                H, W = frame.shape[:2]
+
+                w = max(1, w)
+                h = max(1, h)
+
+                x = max(0, min(x, W - 1))
+                y = max(0, min(y, H - 1))
+
+                w = min(w, W - x)
+                h = min(h, H - y)
+
+                return int(x), int(y), int(w), int(h)
+
+        def color_for_id(track_id):
+                rng = np.random.RandomState(track_id * 9973 + 12345)
+                return int(rng.randint(50, 255)), int(rng.randint(50, 255)), int(rng.randint(50, 255))
+
+        tracks = []
+        next_id = 0
+
+        cap = cv2.VideoCapture(camera_id)
+        cv2.namedWindow("Face Recognizer Window")
+
+        fps = 0
+        frame_count = 0
+        start_time = time.time()
+
+        alpha = 0.6
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+                while True:
+                        ret, frame = cap.read()
+                        if not ret:
+                                break
+
+                        frame = cv2.flip(frame, 1)
+                        detections = self.detector.detect(frame)
+
+                        for tr in tracks:
+                                tr["kf"].predict()
+                                tr["ttl"] -= 1
+
+                        unmatched_dets = []
+                        unmatched_tracks = list(range(len(tracks)))
+
+                        unknown_jobs = []
+                        new_jobs = []
+
+                        for det in detections:
+                                x, y, w, h = det
+                                x, y, w, h = clamp_box(x, y, w, h, frame)
+
+                                best_iou = 0
+                                best_track = None
+
+                                for ti in unmatched_tracks:
+                                        kf = tracks[ti]["kf"]
+                                        cx, cy, s, r = kf.x[:4].reshape(-1)
+
+                                        pw = max(1, np.sqrt(abs(s * r)))
+                                        ph = max(1, abs(s) / pw)
+
+                                        px = cx - pw/2
+                                        py = cy - ph/2
+
+                                        px, py, pw, ph = clamp_box(int(px), int(py), int(pw), int(ph), frame)
+
+                                        track_box = (px, py, pw, ph)
+                                        det_box = (x, y, w, h)
+
+                                        score = iou(det_box, track_box)
+                                        if score > best_iou:
+                                                best_iou = score
+                                                best_track = ti
+
+                                if best_iou > 0.3 and best_track is not None:
+                                        unmatched_tracks.remove(best_track)
+
+                                        cx = x + w/2
+                                        cy = y + h/2
+                                        s = max(1, w*h)
+                                        r = max(0.1, w/float(h))
+
+                                        tracks[best_track]["kf"].update([cx, cy, s, r])
+                                        tracks[best_track]["ttl"] = 10
+
+                                        crop = frame[y:y+h, x:x+w]
+                                        if crop.size == 0:
+                                                continue
+
+                                        if tracks[best_track]["name"] == "Unknown":
+                                                unknown_jobs.append((best_track, crop))
+                                else:
+                                        unmatched_dets.append((x, y, w, h))
+
+                        if unknown_jobs:
+                                crops_unknown = [c for (_, c) in unknown_jobs]
+                                results_unknown = list(executor.map(self.recognize_face, crops_unknown))
+                                for (track_idx, _), (name, sim) in zip(unknown_jobs, results_unknown):
+                                        tracks[track_idx]["name"] = name
+                                        tracks[track_idx]["sim"] = sim
+
+                        if unmatched_dets:
+                                crops_new = [frame[y:y+h, x:x+w] for (x, y, w, h) in unmatched_dets]
+                                crops_new = [c for c in crops_new if c.size > 0]
+                                results_new = list(executor.map(self.recognize_face, crops_new))
+
+                                idx = 0
+                                for (x, y, w, h) in unmatched_dets:
+                                        crop = frame[y:y+h, x:x+w]
+                                        if crop.size == 0:
+                                                continue
+
+                                        name, sim = results_new[idx]
+                                        idx += 1
+
+                                        kf = create_kalman(x, y, w, h)
+                                        tracks.append({
+                                            "id": next_id,
+                                            "kf": kf,
+                                            "name": name,
+                                            "sim": sim,
+                                            "ttl": 10,
+                                            "draw_box": None
+                                        })
+                                        next_id += 1
+
+                        tracks = [t for t in tracks if t["ttl"] > 0]
+
+                        for tr in tracks:
+                                cx, cy, s, r = tr["kf"].x[:4].reshape(-1)
+
+                                w = max(1, np.sqrt(abs(s * r)))
+                                h = max(1, abs(s) / w)
+
+                                x = int(cx - w/2)
+                                y = int(cy - h/2)
+
+                                x, y, w, h = clamp_box(x, y, int(w), int(h), frame)
+
+                                if tr["draw_box"] is None:
+                                        tr["draw_box"] = np.array([x, y, w, h], dtype=np.float32)
+                                else:
+                                        current = np.array([x, y, w, h], dtype=np.float32)
+                                        tr["draw_box"] = alpha * tr["draw_box"] + (1 - alpha) * current
+
+                                dx, dy, dw, dh = tr["draw_box"].astype(int)
+
+                                color = color_for_id(tr["id"])
+                                cv2.rectangle(frame, (dx, dy), (dx+dw, dy+dh), color, 2)
+                                label = f'ID {tr["id"]}: {tr["name"]} ({tr.get("sim", 0):.2f})'
+                                cv2.putText(frame, label, (dx, dy-10),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+                        frame_count += 1
+                        if frame_count % 10 == 0:
+                                elapsed = time.time() - start_time
+                                fps = 10 / elapsed
+                                start_time = time.time()
+
+                        cv2.putText(frame, f'FPS: {fps:.1f}', (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,255,0), 2)
+
+                        cv2.imshow("Face Recognizer Window", frame)
+                        if cv2.waitKey(1) & 0xFF == 27:
+                                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+    def run_webcam(self, camera_id = 0, method_num = 1):
+        if method_num == 1:
+            self.run_webcam1(camera_id=camera_id)
+        elif method_num == 2:
+            self.run_webcam2(camera_id=camera_id)
+        elif method_num == 3:
+            self.run_webcam3(camera_id=camera_id)
+        elif method_num == 0:
+            self.run_webcam0(camera_id=camera_id)
 
 # Run recognizer
 if __name__ == '__main__':
@@ -342,7 +743,7 @@ if __name__ == '__main__':
         # camera_id=0 is default camera (may be iPhone with Continuity Camera)
         # camera_id=1 is typically built-in webcam on macOS
         # Change to camera_id=1 if iPhone is activating instead of computer webcam
-        recognizer.run_webcam(camera_id=1)
+        recognizer.run_webcam(method_num=3)
         
     except NotImplementedError as e:
         print(f"\n❌ {e}")

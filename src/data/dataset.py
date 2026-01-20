@@ -114,31 +114,22 @@ class FaceDataset(Dataset):
             image (torch.Tensor): Shape [3, 224, 224], normalized
             label (int): Class ID (0-8)
         """
-        # TODO: Load image at index idx
-        # 1. Get image path from self.image_paths[idx]
-        # 2. Load with cv2.imread(path)
-        # 3. Convert from BGR to RGB using cv2.cvtColor(..., cv2.COLOR_BGR2RGB)
+        # Load image at index idx
         image_path = self.image_paths[idx]
-        cv2.imread(image_path)
+        image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # TODO: Apply augmentation transforms
-        # Call self.transform(image=image) - returns a dictionary
-        # Extract tensor with ['image'] key
+        # Apply augmentation transforms
         image = self.transform(image=image)['image']
         
-        # TODO: Get corresponding label
-        # Get from self.labels[idx]
+        # Get corresponding label
+        label = self.labels[idx]
         
-        # TODO: Return (image_tensor, label)
-        pass
+        return image, label
     
     def get_class_names(self):
         """Return list of person names in order of label IDs"""
-        # TODO: Create list of names ordered by label ID
-        # Use self.label_to_name dictionary
-        # Return list where index matches label ID
-        pass
+        return [self.label_to_name[i] for i in range(len(self.label_to_name))]
 
 
 def create_dataloaders(config):
@@ -151,22 +142,34 @@ def create_dataloaders(config):
     Returns:
         train_loader, val_loader, class_names
     """
-    # TODO: Extract parameters from config
-    # Get: dataset_path, batch_size, num_workers, train_split
+    # Extract parameters from config
+    dataset_path = config['data']['dataset_path']
+    batch_size = config['data']['batch_size']
+    num_workers = config['data']['num_workers']
+    train_split = config['data']['train_split']
     
-    # TODO: Create train and val datasets
-    # Create FaceDataset for split='train' and split='val'
+    # Create train and val datasets
+    train_dataset = FaceDataset(dataset_path, split='train', train_ratio=train_split)
+    val_dataset = FaceDataset(dataset_path, split='val', train_ratio=train_split)
     
-    # TODO: Create DataLoaders
-    # For training:
-    #   - batch_size from config
-    #   - shuffle=True
-    #   - num_workers from config
-    #   - pin_memory=True (speeds up GPU transfer)
-    # For validation:
-    #   - Same but shuffle=False
+    # Create DataLoaders
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=True
+    )
     
-    # TODO: Get class names from train_dataset
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True
+    )
     
-    # TODO: Return train_loader, val_loader, class_names
-    pass
+    # Get class names from train_dataset
+    class_names = train_dataset.get_class_names()
+    
+    return train_loader, val_loader, class_names

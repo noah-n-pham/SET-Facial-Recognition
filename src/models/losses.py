@@ -29,16 +29,16 @@ class ArcFaceLoss(nn.Module):
         self.margin = margin
         self.scale = scale
         
-        # TODO: Precompute cos(margin) and sin(margin) for numerical stability
-        # Use math.cos() and math.sin()
-        # Store as self.cos_m and self.sin_m
+        # Precompute cos(margin) and sin(margin) for numerical stability
+        self.cos_m = math.cos(margin)
+        self.sin_m = math.sin(margin)
         
-        # TODO: Precompute threshold values (optional, for stability)
-        # self.th = math.cos(math.pi - margin)
-        # self.mm = math.sin(math.pi - margin) * margin
+        # Precompute threshold values for stability
+        self.th = math.cos(math.pi - margin)
+        self.mm = math.sin(math.pi - margin) * margin
         
-        # TODO: Create CrossEntropyLoss criterion
-        # Store as self.criterion
+        # Create CrossEntropyLoss criterion
+        self.criterion = nn.CrossEntropyLoss()
         
     def forward(self, logits, labels):
         """
@@ -53,36 +53,28 @@ class ArcFaceLoss(nn.Module):
         Returns:
             loss (torch.Tensor): Scalar loss value
         """
-        # TODO: The logits from the model are cosine similarities
-        # We need to add angular margin to the target class
+        # Clamp cosine values to avoid numerical issues
+        cosine = logits.clamp(-1, 1)
         
-        # TODO: Clamp cosine values to avoid numerical issues
-        # Use logits.clamp(-1, 1) since cosine must be in [-1, 1]
+        # Compute sine from cosine: sine = sqrt(1 - cosine^2)
+        sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
         
-        # TODO: Compute sine from cosine
-        # sine = sqrt(1 - cosine^2)
-        # Use torch.sqrt and torch.pow
+        # Apply angle addition formula: cos(θ + m) = cos(θ)cos(m) - sin(θ)sin(m)
+        phi = cosine * self.cos_m - sine * self.sin_m
         
-        # TODO: Apply angle addition formula: cos(θ + m) = cos(θ)cos(m) - sin(θ)sin(m)
-        # Create target_logits by applying this formula
-        # Use self.cos_m and self.sin_m computed in __init__
+        # Create one-hot mask for target classes
+        one_hot = F.one_hot(labels, num_classes=logits.size(1)).float()
         
-        # TODO: Create one-hot mask for target classes
-        # Use F.one_hot(labels, num_classes=logits.size(1))
-        # This creates a [B, num_classes] tensor with 1 at target class, 0 elsewhere
+        # Replace target class logits with margin-added version
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         
-        # TODO: Replace target class logits with margin-added version
-        # Formula: output = logits * (1 - one_hot) + target_logits * one_hot
-        # This keeps non-target classes unchanged, but adds margin to target class
+        # Apply feature scale
+        output = output * self.scale
         
-        # TODO: Apply feature scale
-        # Multiply output by self.scale
+        # Compute cross-entropy loss
+        loss = self.criterion(output, labels)
         
-        # TODO: Compute cross-entropy loss
-        # Use self.criterion(scaled_output, labels)
-        
-        # TODO: Return loss
-        pass
+        return loss
 
 
 class SimplifiedLoss(nn.Module):
@@ -93,11 +85,9 @@ class SimplifiedLoss(nn.Module):
     
     def __init__(self):
         super(SimplifiedLoss, self).__init__()
-        # TODO: Create nn.CrossEntropyLoss() criterion
-        pass
+        self.criterion = nn.CrossEntropyLoss()
     
     def forward(self, logits, labels):
         """Simple cross-entropy loss"""
-        # TODO: Return self.criterion(logits, labels)
-        pass
+        return self.criterion(logits, labels)
 

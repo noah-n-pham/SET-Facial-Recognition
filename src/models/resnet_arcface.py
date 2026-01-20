@@ -33,35 +33,25 @@ class ResNetArcFace(nn.Module):
     def __init__(self, num_classes=9, embedding_dim=512, pretrained=True, freeze_backbone=True):
         super(ResNetArcFace, self).__init__()
         
-        # TODO: Load pretrained ResNet-18 and extract feature layers
-        # 1. Load resnet18(pretrained=pretrained) from torchvision
-        # 2. Remove the final fully connected layer
-        #    Hint: Use nn.Sequential(*list(resnet.children())[:-1])
-        #    This gives features of shape [B, 512, 1, 1]
-        # 3. Store as self.features
+        # Load pretrained ResNet-18 and extract feature layers
+        resnet = resnet18(pretrained=pretrained)
+        # Remove the final fully connected layer
+        # This gives features of shape [B, 512, 1, 1]
+        self.features = nn.Sequential(*list(resnet.children())[:-1])
         
-        # TODO: Freeze the backbone if freeze_backbone is True
+        # Freeze the backbone if freeze_backbone is True
         # This implements transfer learning with frozen features
-        # Loop through self.features.parameters() and set requires_grad = False
-        # Why? Pretrained ResNet already learned good visual features from ImageNet.
-        # We only need to train the embedding layer and ArcFace head for face recognition.
-        # This is faster, uses less memory, and prevents overfitting on small datasets.
-        #
-        # if freeze_backbone:
-        #     for param in self.features.parameters():
-        #         param.requires_grad = False
+        if freeze_backbone:
+            for param in self.features.parameters():
+                param.requires_grad = False
+            print(f"✅ Backbone frozen - ResNet-18 weights will not be updated during training")
         
-        # TODO: Create embedding layer
-        # 1. Create nn.Linear(512, embedding_dim) - stores as self.embedding
-        # 2. Create nn.BatchNorm1d(embedding_dim) - stores as self.bn
-        # BatchNorm stabilizes training by normalizing activations
-        # Note: These layers ARE trainable (not frozen)
+        # Create embedding layer
+        self.embedding = nn.Linear(512, embedding_dim)
+        self.bn = nn.BatchNorm1d(embedding_dim)
         
-        # TODO: Create ArcFace classification head
-        # Create nn.Linear(embedding_dim, num_classes, bias=False)
-        # Store as self.fc
-        # Note: No bias because we'll use cosine similarity
-        # Note: This layer IS trainable (not frozen)
+        # Create ArcFace classification head
+        self.fc = nn.Linear(embedding_dim, num_classes, bias=False)
         
     def forward(self, x, labels=None):
         """
@@ -75,22 +65,19 @@ class ResNetArcFace(nn.Module):
             embeddings (torch.Tensor): L2-normalized embeddings [B, embedding_dim]
             logits (torch.Tensor): Classification scores [B, num_classes]
         """
-        # TODO: Extract features from ResNet backbone
-        # 1. Pass x through self.features
-        # 2. Result will be [B, 512, 1, 1]
-        # 3. Flatten to [B, 512] using .view(features.size(0), -1)
+        # Extract features from ResNet backbone
+        features = self.features(x)  # [B, 512, 1, 1]
+        features = features.view(features.size(0), -1)  # Flatten to [B, 512]
         
-        # TODO: Generate embeddings
-        # 1. Pass features through self.embedding layer
-        # 2. Pass through self.bn (batch normalization)
-        # 3. L2 normalize using F.normalize(embeddings, p=2, dim=1)
-        #    This ensures all embeddings have unit length (important for cosine similarity)
+        # Generate embeddings
+        embeddings = self.embedding(features)
+        embeddings = self.bn(embeddings)
+        embeddings = F.normalize(embeddings, p=2, dim=1)  # L2 normalize
         
-        # TODO: Generate classification logits
-        # Pass normalized embeddings through self.fc
+        # Generate classification logits
+        logits = self.fc(embeddings)
         
-        # TODO: Return (embeddings, logits)
-        pass
+        return embeddings, logits
     
     def extract_embedding(self, x):
         """
@@ -102,16 +89,13 @@ class ResNetArcFace(nn.Module):
         Returns:
             embeddings (torch.Tensor): L2-normalized embeddings [B, embedding_dim]
         """
-        # TODO: Call forward() and return only the embeddings
-        # Hint: embeddings, _ = self.forward(x)
-        pass
+        embeddings, _ = self.forward(x)
+        return embeddings
 
 
 def count_parameters(model):
     """Count trainable parameters"""
-    # TODO: Sum all trainable parameters
-    # Loop through model.parameters()
-    # Check if p.requires_grad
-    # Sum p.numel() for each trainable parameter
-    pass
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total = sum(p.numel() for p in model.parameters())
+    return trainable, total
 

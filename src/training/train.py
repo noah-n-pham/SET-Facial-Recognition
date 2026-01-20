@@ -24,32 +24,48 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, epoch):
     """
     model.train()
     
-    # TODO: Initialize tracking variables
-    # running_loss, correct, total (all start at 0)
+    # Initialize tracking variables
+    running_loss = 0.0
+    correct = 0
+    total = 0
     
-    # TODO: Create progress bar using tqdm
-    # pbar = tqdm(dataloader, desc=f"Epoch {epoch} [Train]")
+    # Create progress bar using tqdm
+    pbar = tqdm(dataloader, desc=f"Epoch {epoch} [Train]")
     
-    # TODO: Loop through batches
-    # for images, labels in pbar:
-    #     1. Move images and labels to device
-    #     2. Forward pass: get embeddings and logits from model
-    #     3. Compute loss using criterion(logits, labels)
-    #     4. Zero gradients: optimizer.zero_grad()
-    #     5. Backward pass: loss.backward()
-    #     6. Update weights: optimizer.step()
-    #     7. Update metrics:
-    #        - Add loss.item() to running_loss
-    #        - Get predictions: _, predicted = logits.max(1)
-    #        - Count correct: predicted.eq(labels).sum().item()
-    #        - Update total count
-    #     8. Update progress bar with current loss and accuracy
-    #        Use pbar.set_postfix({'loss': ..., 'acc': ...})
+    # Loop through batches
+    for images, labels in pbar:
+        # Move images and labels to device
+        images, labels = images.to(device), labels.to(device)
+        
+        # Forward pass: get embeddings and logits from model
+        embeddings, logits = model(images, labels)
+        
+        # Compute loss using criterion
+        loss = criterion(logits, labels)
+        
+        # Zero gradients
+        optimizer.zero_grad()
+        
+        # Backward pass
+        loss.backward()
+        
+        # Update weights
+        optimizer.step()
+        
+        # Update metrics
+        running_loss += loss.item()
+        _, predicted = logits.max(1)
+        total += labels.size(0)
+        correct += predicted.eq(labels).sum().item()
+        
+        # Update progress bar with current loss and accuracy
+        accuracy = 100. * correct / total
+        pbar.set_postfix({'loss': f'{loss.item():.4f}', 'acc': f'{accuracy:.2f}%'})
     
-    # TODO: Compute and return average loss and accuracy
-    # avg_loss = running_loss / len(dataloader)
-    # accuracy = correct / total
-    pass
+    # Compute and return average loss and accuracy
+    avg_loss = running_loss / len(dataloader)
+    accuracy = 100. * correct / total
+    return avg_loss, accuracy
 
 
 def validate(model, dataloader, criterion, device, epoch):
@@ -62,17 +78,40 @@ def validate(model, dataloader, criterion, device, epoch):
     """
     model.eval()
     
-    # TODO: Initialize tracking variables (same as training)
+    # Initialize tracking variables
+    running_loss = 0.0
+    correct = 0
+    total = 0
     
-    # TODO: Disable gradient computation
-    # Use: with torch.no_grad():
+    # Disable gradient computation
+    with torch.no_grad():
+        pbar = tqdm(dataloader, desc=f"Epoch {epoch} [Val]")
+        
+        # Loop through validation batches
+        for images, labels in pbar:
+            # Move to device
+            images, labels = images.to(device), labels.to(device)
+            
+            # Forward pass
+            embeddings, logits = model(images, labels)
+            
+            # Compute loss
+            loss = criterion(logits, labels)
+            
+            # Update metrics
+            running_loss += loss.item()
+            _, predicted = logits.max(1)
+            total += labels.size(0)
+            correct += predicted.eq(labels).sum().item()
+            
+            # Update progress bar
+            accuracy = 100. * correct / total
+            pbar.set_postfix({'loss': f'{loss.item():.4f}', 'acc': f'{accuracy:.2f}%'})
     
-    # TODO: Loop through validation batches (similar to training)
-    # Key difference: No optimizer.zero_grad(), loss.backward(), optimizer.step()
-    # Just: forward pass → compute loss → update metrics
-    
-    # TODO: Return average loss and accuracy
-    pass
+    # Return average loss and accuracy
+    avg_loss = running_loss / len(dataloader)
+    accuracy = 100. * correct / total
+    return avg_loss, accuracy
 
 
 def main():
@@ -81,82 +120,107 @@ def main():
     print("Face Recognition Training")
     print("="*70)
     
-    # TODO: Load configuration from configs/config.yaml
-    # Use yaml.safe_load()
+    # Load configuration from configs/config.yaml
+    with open('configs/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
     
-    # TODO: Setup device
-    # Use torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # Print which device is being used
+    # Setup device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
     
-    # TODO: Create dataloaders using create_dataloaders(config)
-    # Returns: train_loader, val_loader, class_names
-    # Print class names
+    # Create dataloaders
+    train_loader, val_loader, class_names = create_dataloaders(config)
+    print(f"Classes: {class_names}")
     
-    # TODO: Initialize model
-    # Create ResNetArcFace with parameters from config:
-    #   - num_classes from config['data']['num_classes']
-    #   - embedding_dim from config['model']['embedding_dim']
-    #   - pretrained from config['model']['pretrained']
-    #   - freeze_backbone from config['model']['freeze_backbone']
-    # Move model to device
-    # Print parameter count using count_parameters(model)
+    # Initialize model
+    model = ResNetArcFace(
+        num_classes=config['data']['num_classes'],
+        embedding_dim=config['model']['embedding_dim'],
+        pretrained=config['model']['pretrained'],
+        freeze_backbone=config['model']['freeze_backbone']
+    )
+    model = model.to(device)
     
-    # TODO: Count trainable vs frozen parameters
-    # This helps verify backbone freezing worked correctly
-    # trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    # total_params = sum(p.numel() for p in model.parameters())
-    # Print both counts to show the difference
-    # With frozen backbone: ~11M total, ~4M trainable (only embedding + head)
+    # Count trainable vs frozen parameters
+    trainable_params, total_params = count_parameters(model)
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,} ({100.*trainable_params/total_params:.1f}%)")
+    print(f"Frozen parameters: {total_params - trainable_params:,} ({100.*(total_params-trainable_params)/total_params:.1f}%)")
     
-    # TODO: Create loss criterion
-    # Create ArcFaceLoss with:
-    #   - margin from config['arcface']['margin']
-    #   - scale from config['arcface']['scale']
+    # Create loss criterion
+    criterion = ArcFaceLoss(
+        margin=config['arcface']['margin'],
+        scale=config['arcface']['scale']
+    )
     
-    # TODO: Create optimizer (IMPORTANT: only for trainable parameters)
-    # When backbone is frozen, we should only optimize trainable parameters
-    # Option 1 (simpler): Pass model.parameters() - optimizer will skip frozen params automatically
-    # Option 2 (explicit): Filter trainable params first
-    #   trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    # Create Adam optimizer with:
-    #   - model.parameters() or trainable_params
-    #   - lr from config['training']['learning_rate']
-    #   - weight_decay from config['training']['weight_decay']
+    # Create optimizer (only for trainable parameters)
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=config['training']['learning_rate'],
+        weight_decay=config['training']['weight_decay']
+    )
     
-    # TODO: Create learning rate scheduler
-    # Check config['training']['lr_scheduler']:
-    #   - If 'step': use StepLR with step_size and gamma from config
-    #   - If 'cosine': use CosineAnnealingLR with T_max=epochs
+    # Create learning rate scheduler
+    if config['training']['lr_scheduler'] == 'step':
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=config['training']['lr_step_size'],
+            gamma=config['training']['lr_gamma']
+        )
+    elif config['training']['lr_scheduler'] == 'cosine':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=config['training']['epochs']
+        )
+    else:
+        scheduler = None
     
-    # TODO: Initialize training loop variables
-    # best_val_acc = 0.0
-    # Create checkpoint directory from config['paths']['checkpoint_dir']
-    # Use Path.mkdir(parents=True, exist_ok=True)
+    # Initialize training loop variables
+    best_val_acc = 0.0
+    checkpoint_dir = Path(config['paths']['checkpoint_dir'])
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
     
     print("\n" + "="*70)
     print("Starting Training")
     print("="*70)
     
-    # TODO: Training loop
-    # for epoch in range(1, config['training']['epochs'] + 1):
-    #     1. Call train_one_epoch() to get train_loss, train_acc
-    #     2. Call validate() to get val_loss, val_acc
-    #     3. Call scheduler.step() to update learning rate
-    #     4. Print epoch summary:
-    #        - Epoch number
-    #        - Train loss and accuracy
-    #        - Val loss and accuracy
-    #        - Current learning rate (optimizer.param_groups[0]['lr'])
-    #     5. Check if val_acc > best_val_acc:
-    #        - Update best_val_acc
-    #        - Save checkpoint using torch.save():
-    #          Save dictionary with: epoch, model_state_dict, 
-    #          optimizer_state_dict, val_acc, class_names
-    #        - Print confirmation message
-    #     6. Print separator line
+    # Training loop
+    for epoch in range(1, config['training']['epochs'] + 1):
+        # Train for one epoch
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        
+        # Validate
+        val_loss, val_acc = validate(model, val_loader, criterion, device, epoch)
+        
+        # Update learning rate
+        if scheduler is not None:
+            scheduler.step()
+        
+        # Print epoch summary
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"\nEpoch {epoch}/{config['training']['epochs']}:")
+        print(f"  Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}%")
+        print(f"  Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc:.2f}%")
+        print(f"  Learning Rate: {current_lr:.6f}")
+        
+        # Check if this is the best model
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            checkpoint_path = checkpoint_dir / 'best_model.pth'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'val_acc': val_acc,
+                'class_names': class_names
+            }, checkpoint_path)
+            print(f"  ✅ New best model saved! Val Acc: {val_acc:.2f}%")
+        
+        print("="*70)
     
-    # TODO: Print final summary
-    # Print best validation accuracy achieved
+    # Print final summary
+    print(f"\n🎉 Training Complete!")
+    print(f"Best Validation Accuracy: {best_val_acc:.2f}%")
     print("="*70)
 
 

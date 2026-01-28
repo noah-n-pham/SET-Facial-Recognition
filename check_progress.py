@@ -1,35 +1,61 @@
 """
-Face Recognition Progress Checker
+Face Recognition + Emotion Recognition Progress Checker
 
 Run this script to see which TODOs you've completed and what's remaining.
 This tracks progress through the TODO-based learning approach.
+
+Semester 1: Face Recognition (Identity)
+Semester 2: Emotion Recognition (Classification)
 """
 import os
 import re
 from pathlib import Path
 
-# Files with TODOs in the new pretrained approach
-TODO_FILES = {
-    "Phase 1: Load Pretrained Model": [
+# ============================================================================
+# SEMESTER 1: Face Recognition (Identity)
+# ============================================================================
+TODO_FILES_SEM1 = {
+    "Sem 1 - Phase 1: Load Pretrained Model": [
         "models/face_model.py",
     ],
-    "Phase 2A: Capture Face Photos": [
+    "Sem 1 - Phase 2A: Capture Face Photos": [
         "utils/face_detector.py",
         "data/face_capture.py",
     ],
-    "Phase 2B: Generate Reference Database": [
+    "Sem 1 - Phase 2B: Generate Reference Database": [
         "core/generate_embeddings.py",
     ],
-    "Phase 3: Real-Time Recognition": [
+    "Sem 1 - Phase 3: Real-Time Recognition": [
         "core/face_recognizer.py",
     ],
 }
 
+# ============================================================================
+# SEMESTER 2: Emotion Recognition (Classification)
+# ============================================================================
+TODO_FILES_SEM2 = {
+    "Sem 2 - Phase 1: Emotion Model": [
+        "models/emotion_model.py",
+    ],
+    "Sem 2 - Phase 2: Smoothing Buffer": [
+        "utils/emotion_smoother.py",
+    ],
+    "Sem 2 - Phase 3: Integration": [
+        "core/face_recognizer.py",  # Has both Sem 1 and Sem 2 TODOs
+    ],
+}
+
+# Combined for backward compatibility
+TODO_FILES = {**TODO_FILES_SEM1, **TODO_FILES_SEM2}
+
 # Expected outputs at each phase
 EXPECTED_OUTPUTS = {
+    # Semester 1
     "Reference Database": "models/reference_embeddings.npy",
     "Label Names": "models/label_names.txt",
     "Face Photos": "data/raw/Dataset",
+    # Semester 2
+    "Emotion Model": "assets/mobilenet_7.onnx",
 }
 
 
@@ -52,10 +78,11 @@ def count_todos_in_file(filepath):
 def check_implementation():
     """Check implementation progress across all phases"""
     print("="*70)
-    print("🔍 FACIAL RECOGNITION PROGRESS CHECKER")
+    print("🔍 FACE + EMOTION RECOGNITION PROGRESS CHECKER")
     print("="*70)
     print("\nThis checker tracks your progress through the TODO-based learning.")
-    print("Follow LEARNING_GUIDE.md for step-by-step instructions.\n")
+    print("• Semester 1: Face Recognition → LEARNING_GUIDE.md")
+    print("• Semester 2: Emotion Recognition → SEMESTER_2_GUIDE.md\n")
     
     total_todos = 0
     completed_files = 0
@@ -150,24 +177,47 @@ def check_implementation():
             
     elif completed_files == total_files:
         print("\n🎉 CONGRATULATIONS! All implementations complete!")
-        print("\n   Your face recognition system is ready!")
+        print("\n   Your face + emotion recognition system is ready!")
         print("\n   ✅ What you've built:")
-        print("      - Pretrained face embedding model")
-        print("      - Face detection system")
+        print("      Semester 1:")
+        print("      - Pretrained face embedding model (MobileFaceNet)")
+        print("      - Face detection system (YuNet)")
         print("      - Reference database with team faces")
-        print("      - Real-time recognition via webcam")
+        print("      - Real-time identity recognition")
+        print("      Semester 2:")
+        print("      - Emotion classification model (MobileNet)")
+        print("      - Temporal smoothing for stable output")
+        print("      - Parallel identity + emotion pipeline")
         print("\n   🚀 Optional next steps:")
         print("      - Deploy to Jetson Nano (see LEARNING_GUIDE.md Phase 4)")
         print("      - Integrate with Arduino for physical actions")
-        print("      - Tune similarity threshold in configs/config.yaml")
-        print("      - Add more people to your database")
+        print("      - Tune thresholds in configs/config.yaml")
+        print("      - Add emotion-based robot behaviors")
         
     else:
-        print(f"\n📝 Keep going! {total_files - completed_files} files remaining")
-        print("   Follow LEARNING_GUIDE.md for detailed instructions")
+        # Check if Semester 1 is complete
+        sem1_complete = all(
+            phase_status.get(phase, False) 
+            for phase in TODO_FILES_SEM1.keys()
+        )
+        
+        if sem1_complete:
+            print("\n🎓 Semester 1 Complete! Moving to Semester 2...")
+            print("\n   📖 Read SEMESTER_2_GUIDE.md for instructions")
+            print("\n   Next steps:")
+            print("   1. Download emotion model:")
+            print('      curl -L -o assets/mobilenet_7.onnx \\')
+            print('        "https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx?raw=true"')
+            print("   2. Open models/emotion_model.py")
+            print("   3. Implement TODOs 14-17")
+        else:
+            print(f"\n📝 Keep going! {total_files - completed_files} files remaining")
+            print("   Follow LEARNING_GUIDE.md for Semester 1 instructions")
     
     print("\n" + "="*70)
-    print("\n💡 Tip: Read LEARNING_GUIDE.md for concept explanations and guidance!")
+    print("\n💡 Tips:")
+    print("   • Semester 1: Read LEARNING_GUIDE.md")
+    print("   • Semester 2: Read SEMESTER_2_GUIDE.md")
     print("="*70 + "\n")
 
 

@@ -29,6 +29,20 @@ detection:
   conf_threshold: 0.7                  # Detection confidence threshold
   nms_threshold: 0.3                   # Non-maximum suppression threshold
 
+# ============================================================================
+# SEMESTER 2: Emotion Recognition Configuration
+# ============================================================================
+# IMPORTANT: Only 7-class models are supported. 8-class models will fail.
+emotion:
+  model_path: "assets/mobilenet_7.onnx"
+  num_classes: 7                       # STRICT - code will fail if model outputs 8
+  emotions: ['Anger', 'Disgust', 'Fear', 'Happiness', 'Neutral', 'Sadness', 'Surprise']
+  input_size: [224, 224]               # MobileNet standard input size
+  # ImageNet normalization (required for MobileNet models)
+  normalize_mean: [0.485, 0.456, 0.406]
+  normalize_std: [0.229, 0.224, 0.225]
+  smoothing_window: 5                  # Number of frames to average for stability
+
 # Camera Configuration
 camera:
   device_id: 0                         # Camera ID (0 = default webcam)

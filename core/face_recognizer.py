@@ -1,14 +1,16 @@
 """
 Real-Time Face Recognition - Phase 3
++ Emotion Recognition Integration - Semester 2, Phase 3
 
 Complete recognition system that:
 1. Detects faces in webcam frames
-2. Extracts embeddings
-3. Compares with reference database
-4. Displays results with bounding boxes
+2. Extracts embeddings (Identity - Semester 1)
+3. Compares with reference database (Identity - Semester 1)
+4. Classifies emotion (Emotion - Semester 2)
+5. Displays results with bounding boxes
 
-Time: 2-3 hours
-TODOs: 4
+Semester 1 TODOs: 11-13
+Semester 2 TODOs: 21-23
 """
 
 import os
@@ -23,6 +25,10 @@ import time
 sys.path.append('.')
 from models.face_model import FaceEmbeddingModel
 from utils.face_detector import FaceDetector
+
+# Semester 2 imports - Emotion Recognition
+from models.emotion_model import EmotionModel, EMOTIONS
+from utils.emotion_smoother import EmotionSmoother
 
 
 class FaceRecognizer:
@@ -85,6 +91,36 @@ class FaceRecognizer:
         # - Arrays loaded with np.load() are already numpy arrays
         
         #raise NotImplementedError("TODO 11: Load models and database")
+        
+        # ====================================================================
+        # SEMESTER 2: Emotion Recognition Integration
+        # ====================================================================
+        
+        # TODO 21: Initialize emotion model and smoother
+        # ===============================================
+        # Steps:
+        # 1. Create EmotionModel instance:
+        #    - model_path='assets/mobilenet_7.onnx'
+        #    - Store as self.emotion_model
+        #
+        # 2. Create EmotionSmoother instance:
+        #    - window_size=5 (average over 5 frames)
+        #    - num_classes=7 (7 emotions)
+        #    - Store as self.emotion_smoother
+        #
+        # 3. Print confirmation message
+        #
+        # Why smoothing?
+        # - Emotion predictions are noisy frame-to-frame
+        # - Averaging over 5 frames provides stable output
+        # - Similar to how video stabilization works
+        #
+        # Hints:
+        # - EmotionModel is imported from models.emotion_model
+        # - EmotionSmoother is imported from utils.emotion_smoother
+        # - Use try/except to handle missing model file gracefully
+        
+        raise NotImplementedError("TODO 21: Initialize emotion model and smoother")
     
     def recognize_face(self, face_img):
         """
@@ -130,7 +166,61 @@ class FaceRecognizer:
         # - @ operator does matrix multiplication
         # - .T transposes the array
         # - Embeddings are normalized, so dot product = cosine similarity
+    
+    # ========================================================================
+    # SEMESTER 2: Emotion Recognition Method
+    # ========================================================================
+    
+    def recognize_emotion(self, face_img):
+        """
+        Recognize emotion from face image.
         
+        This runs IN PARALLEL with recognize_face() - same input, different output.
+        
+        Args:
+            face_img: Cropped face image (BGR) - same as recognize_face input
+        
+        Returns:
+            (emotion, confidence): Tuple of emotion label and probability
+        """
+        
+        # TODO 22: Implement emotion recognition with smoothing
+        # ======================================================
+        # Steps:
+        # 1. Get raw prediction from emotion model:
+        #    - Call self.emotion_model.predict(face_img)
+        #    - This returns (emotion_label, confidence)
+        #    - But we need the full probability vector for smoothing!
+        #
+        # 2. For proper smoothing, we need probabilities:
+        #    - Preprocess: input_tensor = self.emotion_model.preprocess(face_img)
+        #    - Run inference: logits = self.emotion_model.session.run(...)
+        #    - Apply softmax: probs = self.emotion_model.softmax(logits)
+        #
+        # 3. Update smoother with probabilities:
+        #    - Call self.emotion_smoother.update(probs)
+        #
+        # 4. Get smoothed prediction:
+        #    - Call self.emotion_smoother.get_emotion(EMOTIONS)
+        #    - This returns (emotion_label, smoothed_confidence)
+        #
+        # 5. Return the smoothed result
+        #
+        # Error handling:
+        # - Wrap in try/except
+        # - On error, return ("Unknown", 0.0)
+        #
+        # Why smooth here instead of in EmotionModel?
+        # - Smoothing is a TEMPORAL operation (across frames)
+        # - The model only sees one frame at a time
+        # - The recognizer sees the stream of frames
+        #
+        # Alternative simpler approach (if above is too complex):
+        # - Just call self.emotion_model.predict(face_img)
+        # - Skip smoothing for now, add it later
+        # - This still works but may flicker more
+        
+        raise NotImplementedError("TODO 22: Implement emotion recognition")
     
     def run_webcam0(self, camera_id=0):
         #Run real-time recognition on webcam. Press ESC to exit.
@@ -165,7 +255,37 @@ class FaceRecognizer:
                     
                     cropped_face = frame[y1:y2,x1:x2]
                     
+                    # Path A: Identity Recognition (Semester 1)
                     name, similarity = self.recognize_face(cropped_face)
+                    
+                    # TODO 23: Add Path B (Emotion) and update display
+                    # =================================================
+                    # Steps:
+                    # 1. Call emotion recognition:
+                    #    - emotion, emotion_conf = self.recognize_emotion(cropped_face)
+                    #
+                    # 2. Update the label to show both identity and emotion:
+                    #    - Old: label = f'{name} ({similarity:.2f})'
+                    #    - New: label = f'{name} | {emotion}'
+                    #    - Or with confidence: f'{name} ({similarity:.2f}) | {emotion} ({emotion_conf:.0%})'
+                    #
+                    # 3. Optional: Draw emotion on second line
+                    #    - cv2.putText for name on line 1 (y1-10)
+                    #    - cv2.putText for emotion on line 2 (y1-30)
+                    #
+                    # 4. Optional: Color-code by emotion
+                    #    - Happy: green
+                    #    - Angry/Fear: red
+                    #    - Neutral: gray
+                    #    - etc.
+                    #
+                    # For now, keep it simple - just add emotion to the label!
+                    #
+                    # Note: The cropped_face goes to BOTH pipelines:
+                    #   - recognize_face() -> Identity (who is this?)
+                    #   - recognize_emotion() -> Emotion (how do they feel?)
+                    # This is the "parallel processing" architecture from the plan.
+                    
                     color = (0,0,0)
                     if name != "Unknown":
                         color = (0,255,0)

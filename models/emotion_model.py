@@ -80,9 +80,10 @@ class EmotionModel:
         #      f"Wrong model! Expected 8-class model, got {output_shape[-1]} classes. "
         #      f"Download the correct model: enet_b0_8.onnx"
         
-        self.output_shape = self.session.get_outputs()[0].shape
-        if self.output_shape[-1] == NUM_CLASSES:
-            raise "Wrong model! Expected 7-class model, got {output_shape[-1]} classes. "
+        output_shape = self.session.get_outputs()[0].shape
+        if output_shape[-1] != NUM_CLASSES:
+            raise ValueError(f"Wrong model! Expected {NUM_CLASSES}-class model, got {output_shape[-1]} classes. "
+                           f"Download the correct model: enet_b0_8.onnx")
         
         # 4. Print success message with model info
         #
@@ -90,7 +91,7 @@ class EmotionModel:
         # - providers=['CPUExecutionProvider'] ensures CPU execution
         # - Output shape might be [None, 8] or [1, 8] - check the last dimension
         # - This validation prevents silent failures from wrong model downloads
-        print("Download the correct model: mobilenet_7.onnx")
+        print(f"✅ Emotion model loaded: {NUM_CLASSES} classes, input name: {self.input_name}")
 
         # Why validate? Different emotion models have different class counts:
         # - 8-class includes Contempt (our model)
@@ -142,15 +143,13 @@ class EmotionModel:
         #    - ONNX expects shape [batch, channels, height, width]
         #    - Use img[np.newaxis, ...] to add batch dim
         img = img[np.newaxis, ...]
+        
         # 7. Ensure dtype is float32:
         #    - Use .astype(np.float32)
-        if not img[0].astype(np.float32):
-            raise "Invalid Conversion into float32"
+        img = img.astype(np.float32)
         
         return img
-
-        # Return the preprocessed tensor.
-        #
+        
         # Educational Note - Why ImageNet Normalization?
         # ==============================================
         # In Semester 1, InsightFace handled normalization internally.
@@ -165,8 +164,6 @@ class EmotionModel:
         #
         # This is like converting temperatures from Fahrenheit to Celsius
         # before using a Celsius-trained weather model!
-        
-        raise NotImplementedError("TODO 15: Implement preprocessing")
     
     def softmax(self, logits):
         """
@@ -198,9 +195,7 @@ class EmotionModel:
         # 3. Normalize by sum:
         #    - probabilities = exp_values / np.sum(exp_values)
         return exp_values / np.sum(exp_values)
-
-        # 4. Return the probabilities
-        #
+        
         # Educational Note - Why Manual Softmax?
         # ======================================
         # You COULD use scipy.special.softmax, but implementing it yourself
@@ -216,8 +211,6 @@ class EmotionModel:
         #   logits = [2.0, 1.0, 0.1]  # Raw scores for 3 classes
         #   softmax(logits) = [0.659, 0.242, 0.099]  # Probabilities
         #   Sum = 1.0 (always!)
-        
-        raise NotImplementedError("TODO 16: Implement softmax")
     
     def predict(self, face_img):
         """
@@ -237,31 +230,23 @@ class EmotionModel:
         # 1. Preprocess the image:
         #    - Call self.preprocess(face_img)
         #    - Store as input_tensor
-        input_tensor = self.preprocess(face_img)
-
+        #
         # 2. Run ONNX inference:
         #    - Call self.session.run(None, {self.input_name: input_tensor})
         #    - This returns a list; get the first element [0]
         #    - Get the first batch item [0] to get shape [8]
         #    - These are the raw logits (unnormalized scores)
-        self.shapeList = self.session.run(None, {self.input_name: input_tensor})
-        rawLogits = self.shapeList[0]
-
+        #
         # 3. Apply softmax to get probabilities:
         #    - Call self.softmax(logits)
-        probabilities = self.softmax(rawLogits)
-
+        #
         # 4. Find the predicted class:
         #    - Use np.argmax(probabilities) to get index of highest prob
         #    - Get emotion label: EMOTIONS[predicted_index]
         #    - Get confidence: probabilities[predicted_index]
-        predicted_index = np.argmax(probabilities)
-        emotion_label = EMOTIONS[predicted_index]
-        confidence = probabilities[predicted_index]
-
+        #
         # 5. Return (emotion_label, confidence)
-        return (emotion_label, confidence)
-
+        #
         # Error Handling:
         # - Wrap in try/except
         # - On any error, print warning and return ("Unknown", 0.0)
@@ -271,7 +256,28 @@ class EmotionModel:
         # - np.argmax returns the index of the maximum value
         # - EMOTIONS is the list mapping index to emotion name
         
-        raise NotImplementedError("TODO 17: Run inference and return prediction")
+        try:
+            # 1. Preprocess the image
+            input_tensor = self.preprocess(face_img)
+            
+            # 2. Run ONNX inference
+            outputs = self.session.run(None, {self.input_name: input_tensor})
+            logits = outputs[0][0]  # First output, first batch item -> shape [8]
+            
+            # 3. Apply softmax to get probabilities
+            probabilities = self.softmax(logits)
+            
+            # 4. Find the predicted class
+            predicted_index = np.argmax(probabilities)
+            emotion_label = EMOTIONS[predicted_index]
+            confidence = float(probabilities[predicted_index])
+            
+            # 5. Return (emotion_label, confidence)
+            return (emotion_label, confidence)
+            
+        except Exception as e:
+            print(f"Warning: Emotion prediction failed: {e}")
+            return ("Unknown", 0.0)
 
 
 # =============================================================================

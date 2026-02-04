@@ -100,12 +100,12 @@ class FaceRecognizer:
         # ===============================================
         # Steps:
         # 1. Create EmotionModel instance:
-        #    - model_path='assets/mobilenet_7.onnx'
+        #    - model_path='assets/enet_b0_8.onnx'
         #    - Store as self.emotion_model
         #
         # 2. Create EmotionSmoother instance:
         #    - window_size=5 (average over 5 frames)
-        #    - num_classes=7 (7 emotions)
+        #    - num_classes=8 (8 emotions)
         #    - Store as self.emotion_smoother
         #
         # 3. Print confirmation message

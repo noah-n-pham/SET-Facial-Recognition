@@ -1,12 +1,12 @@
 """
 Emotion Recognition Model - Semester 2, Phase 1
 
-Wraps a MobileNet ONNX model trained on AffectNet for emotion classification.
+Wraps an EfficientNet ONNX model trained on AffectNet for emotion classification.
 This runs IN PARALLEL with the face recognition system from Semester 1.
 
-Model: MobileNet (7-class AffectNet)
+Model: EfficientNet B0 (8-class AffectNet)
 Input: 224x224 RGB normalized image
-Output: 7 emotion probabilities
+Output: 8 emotion probabilities
 
 Time: 1-2 hours
 TODOs: 4
@@ -23,23 +23,23 @@ import onnxruntime as ort
 # These are hardcoded to match the specific model we're using.
 # If you change the model, you must update these values.
 
-IMG_SIZE = 224  # MobileNet uses standard 224x224 input
+IMG_SIZE = 224  # EfficientNet B0 uses 224x224 input
 
-NUM_CLASSES = 7  # STRICT - we only support 7-class models (no Contempt)
+NUM_CLASSES = 8  # 8-class AffectNet (includes Contempt)
 
 # Emotion labels in the EXACT order the model outputs them
-# This is the 7-class AffectNet order (Contempt removed)
-EMOTIONS = ['Anger', 'Disgust', 'Fear', 'Happiness', 'Neutral', 'Sadness', 'Surprise']
+# This is the standard 8-class AffectNet order
+EMOTIONS = ['Anger', 'Contempt', 'Disgust', 'Fear', 'Happiness', 'Neutral', 'Sadness', 'Surprise']
 
 # ImageNet normalization constants
-# These are the mean and std of the ImageNet dataset used to train MobileNet
+# These are the mean and std of the ImageNet dataset used to train EfficientNet
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 class EmotionModel:
     """
-    Loads a MobileNet ONNX model and classifies facial emotions.
+    Loads an EfficientNet ONNX model and classifies facial emotions.
     
     This is similar to FaceEmbeddingModel from Semester 1, but instead of
     producing embeddings for verification, it produces class probabilities
@@ -50,7 +50,7 @@ class EmotionModel:
     - Semester 2: Logits + Softmax (closed-set classification)
     """
     
-    def __init__(self, model_path='assets/mobilenet_7.onnx'):
+    def __init__(self, model_path='assets/enet_b0_8.onnx'):
         """
         Initialize the emotion recognition model.
         
@@ -73,28 +73,28 @@ class EmotionModel:
         #
         # 3. Validate output shape (FAIL FAST):
         #    - Get output shape: self.session.get_outputs()[0].shape
-        #    - Check if the last dimension equals NUM_CLASSES (7)
+        #    - Check if the last dimension equals NUM_CLASSES (8)
         #    - If not, raise ValueError with helpful message:
-        #      f"Wrong model! Expected 7-class model, got {output_shape[-1]} classes. "
-        #      f"Download the correct model: mobilenet_7.onnx"
+        #      f"Wrong model! Expected 8-class model, got {output_shape[-1]} classes. "
+        #      f"Download the correct model: enet_b0_8.onnx"
         #
         # 4. Print success message with model info
         #
         # Hints:
         # - providers=['CPUExecutionProvider'] ensures CPU execution
-        # - Output shape might be [None, 7] or [1, 7] - check the last dimension
+        # - Output shape might be [None, 8] or [1, 8] - check the last dimension
         # - This validation prevents silent failures from wrong model downloads
         #
         # Why validate? Different emotion models have different class counts:
-        # - 8-class includes Contempt
-        # - 7-class excludes Contempt (our target)
+        # - 8-class includes Contempt (our model)
+        # - 7-class excludes Contempt
         # Using the wrong model would cause index mismatches and wrong labels!
         
         raise NotImplementedError("TODO 14: Load ONNX model and validate output shape")
     
     def preprocess(self, face_img):
         """
-        Preprocess face image for MobileNet inference.
+        Preprocess face image for EfficientNet inference.
         
         Args:
             face_img: Face image in BGR format (OpenCV default)
@@ -111,7 +111,7 @@ class EmotionModel:
         #    - Use cv2.resize(face_img, (IMG_SIZE, IMG_SIZE))
         #
         # 2. Convert BGR to RGB:
-        #    - OpenCV loads images in BGR, but MobileNet expects RGB
+        #    - OpenCV loads images in BGR, but EfficientNet expects RGB
         #    - Use cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         #
         # 3. Scale pixel values to [0, 1]:
@@ -142,7 +142,7 @@ class EmotionModel:
         # In Semester 1, InsightFace handled normalization internally.
         # Now YOU must do it explicitly. Here's why:
         #
-        # MobileNet was trained on ImageNet, where images were normalized
+        # EfficientNet was trained on ImageNet, where images were normalized
         # using ImageNet's mean and std. To get good predictions, we must
         # normalize our input the same way the training data was normalized.
         #
@@ -226,7 +226,7 @@ class EmotionModel:
         # 2. Run ONNX inference:
         #    - Call self.session.run(None, {self.input_name: input_tensor})
         #    - This returns a list; get the first element [0]
-        #    - Get the first batch item [0] to get shape [7]
+        #    - Get the first batch item [0] to get shape [8]
         #    - These are the raw logits (unnormalized scores)
         #
         # 3. Apply softmax to get probabilities:
@@ -261,14 +261,15 @@ if __name__ == '__main__':
     print("Testing Emotion Recognition Model")
     print("="*70)
     
-    model_path = 'assets/mobilenet_7.onnx'
+    model_path = 'assets/enet_b0_8.onnx'
     
     # Check if model exists
     if not os.path.exists(model_path):
         print(f"\n❌ Model file not found: {model_path}")
-        print("\n📥 Download the model:")
-        print('   curl -L -o assets/mobilenet_7.onnx \\')
-        print('     "https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx?raw=true"')
+        print("\n📥 Download the model from the HSEmotion repository:")
+        print("   https://github.com/HSE-asavchenko/face-emotion-recognition")
+        print("   File: models/affectnet_emotions/onnx/enet_b0_8_best_vgaf.onnx")
+        print("   Save as: assets/enet_b0_8.onnx")
         exit(1)
     
     try:
@@ -284,8 +285,8 @@ if __name__ == '__main__':
         print(f"   Test prediction: {emotion} ({confidence:.1%})")
         print(f"   (Random image - result not meaningful)\n")
         
-        # Test softmax properties
-        logits = np.array([2.0, 1.0, 0.5, 0.1, 0.0, -0.5, -1.0])
+        # Test softmax properties (8 values for 8 emotions)
+        logits = np.array([2.0, 1.5, 1.0, 0.5, 0.1, 0.0, -0.5, -1.0])
         probs = model.softmax(logits)
         print(f"✅ Softmax test:")
         print(f"   Sum of probabilities: {np.sum(probs):.6f} (should be 1.0)")

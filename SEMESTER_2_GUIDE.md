@@ -10,7 +10,7 @@
 
 ### What You'll Learn
 
-1. **Emotion Classification** - Classifying faces into 7 emotion categories
+1. **Emotion Classification** - Classifying faces into 8 emotion categories
 2. **ONNX Runtime** - Loading and running pretrained models directly
 3. **Softmax Function** - Converting raw scores to probabilities
 4. **ImageNet Normalization** - Preprocessing for transfer learning models
@@ -24,7 +24,7 @@ Camera → Face Detection → Crop Face → ┬→ Identity (Semester 1)  → Na
          (YuNet)                       │   (MobileFaceNet)
                                        │
                                        └→ Emotion (Semester 2)  → Emotion
-                                           (MobileNet)
+                                           (EfficientNet)
                                                    ↓
                                            Display: "Ben | Happy"
 ```
@@ -43,7 +43,7 @@ In Semester 1, you built a **verification** system:
 - Method: Cosine similarity between embeddings
 
 In Semester 2, you're building a **classification** system:
-- "Which of these 7 emotions does this face show?"
+- "Which of these 8 emotions does this face show?"
 - Closed-set: must pick one of the known classes
 - Method: Softmax over class logits
 
@@ -54,7 +54,7 @@ VERIFICATION (Semester 1):              CLASSIFICATION (Semester 2):
 └──────┬──────┘                         └──────┬──────┘
        ↓                                       ↓
 ┌─────────────┐                         ┌─────────────┐
-│  Embedding  │ [512 numbers]           │   Logits    │ [7 numbers]
+│  Embedding  │ [512 numbers]           │   Logits    │ [8 numbers]
 └──────┬──────┘                         └──────┬──────┘
        ↓                                       ↓
 ┌─────────────┐                         ┌─────────────┐
@@ -134,7 +134,7 @@ Average all entries to get smoothed prediction.
 
 ### Concept 8: ImageNet Normalization
 
-MobileNet was trained on ImageNet with specific preprocessing:
+EfficientNet was trained on ImageNet with specific preprocessing:
 ```python
 mean = [0.485, 0.456, 0.406]  # RGB channel means
 std  = [0.229, 0.224, 0.225]  # RGB channel stds
@@ -158,21 +158,24 @@ normalized = (image / 255.0 - mean) / std
 
 ### Step 1: Download the Emotion Model
 
+Download the EfficientNet B0 8-class emotion model from the HSEmotion repository:
+
+**Option A: Clone and copy**
 ```bash
-# Download MobileNet 7-class emotion model
-curl -L -o assets/mobilenet_7.onnx \
-  "https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx?raw=true"
+git clone --depth 1 https://github.com/HSE-asavchenko/face-emotion-recognition.git /tmp/face-emotion-recognition
+cp /tmp/face-emotion-recognition/models/affectnet_emotions/onnx/enet_b0_8_best_vgaf.onnx assets/enet_b0_8.onnx
 ```
 
-Or manually download from:
-- URL: https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx
-- Save to: `assets/mobilenet_7.onnx`
+**Option B: Manual download**
+- Repository: https://github.com/HSE-asavchenko/face-emotion-recognition
+- File: `models/affectnet_emotions/onnx/enet_b0_8_best_vgaf.onnx`
+- Save to: `assets/enet_b0_8.onnx`
 
 ### Step 2: Verify Download
 
 ```bash
-ls -lh assets/mobilenet_7.onnx
-# Should show ~13 MB file
+ls -lh assets/enet_b0_8.onnx
+# Should show ~16 MB file
 ```
 
 ### Step 3: Verify Dependencies
@@ -200,7 +203,7 @@ Facial-Recognition/
 │
 └── assets/
     ├── face_detection_yunet_2023mar.onnx   # Semester 1
-    └── mobilenet_7.onnx                     # Semester 2 (NEW)
+    └── enet_b0_8.onnx                       # Semester 2 (NEW)
 ```
 
 ---
@@ -228,14 +231,14 @@ ONNX (Open Neural Network Exchange) is a universal format for ML models.
 Navigate to `models/emotion_model.py` and find:
 
 ```python
-def __init__(self, model_path='assets/mobilenet_7.onnx'):
+def __init__(self, model_path='assets/enet_b0_8.onnx'):
     # TODO 14: Load ONNX model and validate output shape
 ```
 
 **What to implement:**
 1. Create ONNX Runtime InferenceSession
 2. Get input name from model metadata
-3. Validate output shape is exactly 7 (fail fast if wrong model)
+3. Validate output shape is exactly 8 (fail fast if wrong model)
 4. Store session and input name
 
 **Reasoning:**
@@ -334,7 +337,7 @@ After 6:     [F, B, C, D, E]  position=1 (A overwritten)
 #### TODO 18: Initialize Buffer
 
 ```python
-def __init__(self, window_size=5, num_classes=7):
+def __init__(self, window_size=5, num_classes=8):
     # TODO 18: Initialize circular buffer
 ```
 
@@ -409,8 +412,8 @@ In `__init__`, after the Semester 1 initialization:
 ```
 
 **What to implement:**
-1. Create EmotionModel instance
-2. Create EmotionSmoother instance
+1. Create EmotionModel instance (model_path='assets/enet_b0_8.onnx')
+2. Create EmotionSmoother instance (window_size=5, num_classes=8)
 3. Handle missing model file gracefully
 
 #### TODO 22: Implement recognize_emotion()
@@ -474,12 +477,12 @@ python core/face_recognizer.py
 ### Common Issues
 
 **Issue 1: "Model file not found"**
-- Download the model: `curl -L -o assets/mobilenet_7.onnx "URL"`
-- Check file exists: `ls -lh assets/mobilenet_7.onnx`
+- Download the model from the HSEmotion repository (see Step 1)
+- Check file exists: `ls -lh assets/enet_b0_8.onnx`
 
 **Issue 2: "Wrong number of classes"**
-- You downloaded an 8-class model instead of 7-class
-- Delete and re-download `mobilenet_7.onnx` specifically
+- You downloaded a 7-class model instead of 8-class
+- Delete and re-download `enet_b0_8_best_vgaf.onnx` specifically
 
 **Issue 3: "Emotion flickering rapidly"**
 - Increase smoothing window (default is 5)
@@ -520,7 +523,7 @@ python core/face_recognizer.py
 
 You've extended the Semester 1 face recognition system with emotion classification:
 
-1. **Phase 1:** Loaded MobileNet ONNX model for emotion classification
+1. **Phase 1:** Loaded EfficientNet ONNX model for emotion classification
 2. **Phase 2:** Implemented temporal smoothing for stable predictions
 3. **Phase 3:** Integrated emotion into the real-time webcam loop
 
@@ -532,20 +535,21 @@ You've extended the Semester 1 face recognition system with emotion classificati
 
 ## Appendix: Emotion Classes
 
-The 7-class AffectNet model recognizes:
+The 8-class AffectNet model recognizes:
 
 | Index | Emotion | Description |
 |-------|---------|-------------|
 | 0 | Anger | Furrowed brow, tight lips |
-| 1 | Disgust | Wrinkled nose, raised upper lip |
-| 2 | Fear | Wide eyes, raised eyebrows |
-| 3 | Happiness | Smile, raised cheeks |
-| 4 | Neutral | Relaxed face, no strong expression |
-| 5 | Sadness | Downturned mouth, drooping eyelids |
-| 6 | Surprise | Wide eyes, open mouth, raised eyebrows |
+| 1 | Contempt | Asymmetric lip raise |
+| 2 | Disgust | Wrinkled nose, raised upper lip |
+| 3 | Fear | Wide eyes, raised eyebrows |
+| 4 | Happiness | Smile, raised cheeks |
+| 5 | Neutral | Relaxed face, no strong expression |
+| 6 | Sadness | Downturned mouth, drooping eyelids |
+| 7 | Surprise | Wide eyes, open mouth, raised eyebrows |
 
-**Note:** "Contempt" (asymmetric lip raise) is NOT included in the 7-class model.
-This is intentional - contempt is rare and often confused with other emotions.
+**Note:** This 8-class model is the standard AffectNet format and includes "Contempt".
+It is the default model in the HSEmotion library with more documentation and community support.
 
 ---
 

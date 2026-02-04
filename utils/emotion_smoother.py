@@ -38,13 +38,13 @@ class EmotionSmoother:
         emotion = EMOTIONS[np.argmax(smoothed_probs)]
     """
     
-    def __init__(self, window_size=5, num_classes=7):
+    def __init__(self, window_size=5, num_classes=8):
         """
         Initialize the emotion smoother.
         
         Args:
             window_size: Number of frames to average (default: 5)
-            num_classes: Number of emotion classes (default: 7)
+            num_classes: Number of emotion classes (default: 8)
         """
         
         # TODO 18: Initialize circular buffer
@@ -185,20 +185,22 @@ if __name__ == '__main__':
     print("Testing Emotion Smoother")
     print("="*70)
     
-    EMOTIONS = ['Anger', 'Disgust', 'Fear', 'Happiness', 'Neutral', 'Sadness', 'Surprise']
+    # 8-class AffectNet emotions (includes Contempt)
+    EMOTIONS = ['Anger', 'Contempt', 'Disgust', 'Fear', 'Happiness', 'Neutral', 'Sadness', 'Surprise']
     
     try:
         # Test 1: Basic functionality
         print("\n📊 Test 1: Basic smoothing")
-        smoother = EmotionSmoother(window_size=3, num_classes=7)
+        smoother = EmotionSmoother(window_size=3, num_classes=8)
         
-        # Simulate predictions over 5 frames
+        # Simulate predictions over 5 frames (8 classes each)
+        # Index: 0=Anger, 1=Contempt, 2=Disgust, 3=Fear, 4=Happiness, 5=Neutral, 6=Sadness, 7=Surprise
         predictions = [
-            [0.1, 0.0, 0.0, 0.8, 0.1, 0.0, 0.0],  # Happy
-            [0.1, 0.0, 0.0, 0.7, 0.2, 0.0, 0.0],  # Happy
-            [0.2, 0.0, 0.0, 0.3, 0.5, 0.0, 0.0],  # Neutral
-            [0.1, 0.0, 0.0, 0.6, 0.3, 0.0, 0.0],  # Happy
-            [0.1, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0],  # Happy
+            [0.05, 0.0, 0.0, 0.0, 0.8, 0.1, 0.0, 0.05],  # Happy
+            [0.05, 0.0, 0.0, 0.0, 0.7, 0.2, 0.0, 0.05],  # Happy
+            [0.1, 0.0, 0.0, 0.0, 0.3, 0.5, 0.0, 0.1],    # Neutral
+            [0.05, 0.0, 0.0, 0.0, 0.6, 0.3, 0.0, 0.05],  # Happy
+            [0.05, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.05],  # Happy
         ]
         
         for i, probs in enumerate(predictions):
@@ -210,7 +212,7 @@ if __name__ == '__main__':
         
         # Test 2: Empty buffer
         print("\n📊 Test 2: Empty buffer handling")
-        smoother2 = EmotionSmoother(window_size=5, num_classes=7)
+        smoother2 = EmotionSmoother(window_size=5, num_classes=8)
         empty_result = smoother2.get_smoothed()
         print(f"   Empty buffer returns: {empty_result}")
         print(f"   Sum: {np.sum(empty_result):.4f} (should be 1.0)")
@@ -219,18 +221,19 @@ if __name__ == '__main__':
         
         # Test 3: Circular behavior
         print("\n📊 Test 3: Circular buffer behavior")
-        smoother3 = EmotionSmoother(window_size=2, num_classes=7)
+        smoother3 = EmotionSmoother(window_size=2, num_classes=8)
         
         # Add 3 entries to a size-2 buffer (should overwrite first)
-        smoother3.update([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Anger
-        smoother3.update([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])  # Happy
-        smoother3.update([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])  # Neutral (overwrites Anger)
+        # Index: 0=Anger, 4=Happiness, 5=Neutral
+        smoother3.update([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Anger
+        smoother3.update([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])  # Happy
+        smoother3.update([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])  # Neutral (overwrites Anger)
         
         smoothed = smoother3.get_smoothed()
         emotion, _ = smoother3.get_emotion(EMOTIONS)
         # Should be average of Happy and Neutral, not Anger
         print(f"   After 3 updates to size-2 buffer:")
-        print(f"   Happiness prob: {smoothed[3]:.2f}, Neutral prob: {smoothed[4]:.2f}")
+        print(f"   Happiness prob: {smoothed[4]:.2f}, Neutral prob: {smoothed[5]:.2f}")
         print(f"   Anger prob: {smoothed[0]:.2f} (should be 0 - was overwritten)")
         print("   ✅ Circular buffer correctly overwrites oldest entries")
         

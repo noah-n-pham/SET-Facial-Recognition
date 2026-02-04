@@ -55,7 +55,7 @@ EXPECTED_OUTPUTS = {
     "Label Names": "models/label_names.txt",
     "Face Photos": "data/raw/Dataset",
     # Semester 2
-    "Emotion Model": "assets/mobilenet_7.onnx",
+    "Emotion Model": "assets/enet_b0_8.onnx",
 }
 
 
@@ -185,7 +185,7 @@ def check_implementation():
         print("      - Reference database with team faces")
         print("      - Real-time identity recognition")
         print("      Semester 2:")
-        print("      - Emotion classification model (MobileNet)")
+        print("      - Emotion classification model (EfficientNet)")
         print("      - Temporal smoothing for stable output")
         print("      - Parallel identity + emotion pipeline")
         print("\n   🚀 Optional next steps:")
@@ -205,9 +205,9 @@ def check_implementation():
             print("\n🎓 Semester 1 Complete! Moving to Semester 2...")
             print("\n   📖 Read SEMESTER_2_GUIDE.md for instructions")
             print("\n   Next steps:")
-            print("   1. Download emotion model:")
-            print('      curl -L -o assets/mobilenet_7.onnx \\')
-            print('        "https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx?raw=true"')
+            print("   1. Download emotion model from HSEmotion repository:")
+            print("      git clone --depth 1 https://github.com/HSE-asavchenko/face-emotion-recognition.git /tmp/face-emotion-recognition")
+            print("      cp /tmp/face-emotion-recognition/models/affectnet_emotions/onnx/enet_b0_8_best_vgaf.onnx assets/enet_b0_8.onnx")
             print("   2. Open models/emotion_model.py")
             print("   3. Implement TODOs 14-17")
         else:

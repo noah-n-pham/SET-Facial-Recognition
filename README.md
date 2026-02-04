@@ -11,7 +11,7 @@ Camera → Face Detection → Crop Face → ┬→ Identity Pipeline  → "Ben"
          (YuNet)                       │   (MobileFaceNet)
                                        │
                                        └→ Emotion Pipeline  → "Happy"
-                                           (MobileNet)
+                                           (EfficientNet)
 
 Output: "Ben | Happy (92%)"
 ```
@@ -22,7 +22,7 @@ Output: "Ben | Happy (92%)"
 3. **Identity Matching** - Cosine similarity against reference database
 
 ### Semester 2: Emotion Recognition
-1. **Emotion Classification** - MobileNet classifies 7 emotions
+1. **Emotion Classification** - EfficientNet classifies 8 emotions
 2. **Temporal Smoothing** - Moving average for stable output
 3. **Parallel Integration** - Runs alongside identity pipeline
 
@@ -35,9 +35,9 @@ pip install -r requirements.txt
 
 ### Download Models
 ```bash
-# Emotion model (Semester 2)
-curl -L -o assets/mobilenet_7.onnx \
-  "https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/onnx/mobilenet_7.onnx?raw=true"
+# Emotion model (Semester 2) - Clone and copy from HSEmotion repository
+git clone --depth 1 https://github.com/HSE-asavchenko/face-emotion-recognition.git /tmp/face-emotion-recognition
+cp /tmp/face-emotion-recognition/models/affectnet_emotions/onnx/enet_b0_8_best_vgaf.onnx assets/enet_b0_8.onnx
 ```
 
 ### Check Progress
@@ -67,7 +67,7 @@ Facial-Recognition/
 ├── configs/                   # System configuration
 └── assets/
     ├── face_detection_yunet_2023mar.onnx  # Face detection model
-    └── mobilenet_7.onnx                    # Emotion model (download required)
+    └── enet_b0_8.onnx                      # Emotion model (download required)
 ```
 
 ## Tech Stack
@@ -80,11 +80,12 @@ Facial-Recognition/
 
 ## Emotion Classes
 
-The system recognizes 7 emotions (AffectNet 7-class):
+The system recognizes 8 emotions (AffectNet 8-class):
 
 | Emotion | Description |
 |---------|-------------|
 | Anger | Furrowed brow, tight lips |
+| Contempt | Asymmetric lip raise |
 | Disgust | Wrinkled nose |
 | Fear | Wide eyes, raised eyebrows |
 | Happiness | Smile, raised cheeks |

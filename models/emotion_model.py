@@ -66,31 +66,38 @@ class EmotionModel:
         # 1. Create an ONNX Runtime InferenceSession:
         #    - Use ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
         #    - Store as self.session
-        #
+        self.session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider']) 
+
         # 2. Get model metadata:
         #    - Get input name: self.session.get_inputs()[0].name
         #    - Store as self.input_name
-        #
+        self.input_name = self.session.get_inputs()[0].name
+
         # 3. Validate output shape (FAIL FAST):
         #    - Get output shape: self.session.get_outputs()[0].shape
         #    - Check if the last dimension equals NUM_CLASSES (8)
         #    - If not, raise ValueError with helpful message:
         #      f"Wrong model! Expected 8-class model, got {output_shape[-1]} classes. "
         #      f"Download the correct model: enet_b0_8.onnx"
-        #
+        
+        self.output_shape = self.session.get_outputs()[0].shape
+        if self.output_shape[-1] == NUM_CLASSES:
+            raise "Wrong model! Expected 7-class model, got {output_shape[-1]} classes. "
+        
         # 4. Print success message with model info
         #
         # Hints:
         # - providers=['CPUExecutionProvider'] ensures CPU execution
         # - Output shape might be [None, 8] or [1, 8] - check the last dimension
         # - This validation prevents silent failures from wrong model downloads
-        #
+        print("Download the correct model: mobilenet_7.onnx")
+
         # Why validate? Different emotion models have different class counts:
         # - 8-class includes Contempt (our model)
         # - 7-class excludes Contempt
         # Using the wrong model would cause index mismatches and wrong labels!
         
-        raise NotImplementedError("TODO 14: Load ONNX model and validate output shape")
+        #raise NotImplementedError("TODO 14: Load ONNX model and validate output shape")
     
     def preprocess(self, face_img):
         """
@@ -109,32 +116,39 @@ class EmotionModel:
         # Steps:
         # 1. Resize image to IMG_SIZE x IMG_SIZE (224x224):
         #    - Use cv2.resize(face_img, (IMG_SIZE, IMG_SIZE))
-        #
+        img = cv2.resize(face_img,(IMG_SIZE,IMG_SIZE))
         # 2. Convert BGR to RGB:
         #    - OpenCV loads images in BGR, but EfficientNet expects RGB
         #    - Use cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        #
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         # 3. Scale pixel values to [0, 1]:
         #    - Divide by 255.0
         #    - Make sure to use float division!
-        #
+        img = img / 255.0
+
         # 4. Apply ImageNet normalization:
         #    - Subtract MEAN: (img - MEAN)
         #    - Divide by STD: (img - MEAN) / STD
         #    - This centers the data around 0 with unit variance
-        #
+        img = (img - MEAN) / STD
+
         # 5. Transpose from HWC to CHW format:
         #    - OpenCV uses (Height, Width, Channels)
         #    - ONNX expects (Channels, Height, Width)
         #    - Use img.transpose(2, 0, 1)
-        #
+        img = img.transpose(2,0,1)
+
         # 6. Add batch dimension:
         #    - ONNX expects shape [batch, channels, height, width]
         #    - Use img[np.newaxis, ...] to add batch dim
-        #
+        img = img[np.newaxis, ...]
         # 7. Ensure dtype is float32:
         #    - Use .astype(np.float32)
-        #
+        if not img[0].astype(np.float32):
+            raise "Invalid Conversion into float32"
+        
+        return img
+
         # Return the preprocessed tensor.
         #
         # Educational Note - Why ImageNet Normalization?
@@ -177,13 +191,14 @@ class EmotionModel:
         #    - exp(large numbers) can overflow to infinity
         #    - Subtracting max doesn't change the result but prevents overflow
         #    - shifted = logits - np.max(logits)
-        #
+        shifted = logits - np.max(logits)
         # 2. Compute exponentials:
         #    - exp_values = np.exp(shifted)
-        #
+        exp_values = np.exp(shifted)
         # 3. Normalize by sum:
         #    - probabilities = exp_values / np.sum(exp_values)
-        #
+        return exp_values / np.sum(exp_values)
+
         # 4. Return the probabilities
         #
         # Educational Note - Why Manual Softmax?
@@ -222,23 +237,31 @@ class EmotionModel:
         # 1. Preprocess the image:
         #    - Call self.preprocess(face_img)
         #    - Store as input_tensor
-        #
+        input_tensor = self.preprocess(face_img)
+
         # 2. Run ONNX inference:
         #    - Call self.session.run(None, {self.input_name: input_tensor})
         #    - This returns a list; get the first element [0]
         #    - Get the first batch item [0] to get shape [8]
         #    - These are the raw logits (unnormalized scores)
-        #
+        self.shapeList = self.session.run(None, {self.input_name: input_tensor})
+        rawLogits = self.shapeList[0]
+
         # 3. Apply softmax to get probabilities:
         #    - Call self.softmax(logits)
-        #
+        probabilities = self.softmax(rawLogits)
+
         # 4. Find the predicted class:
         #    - Use np.argmax(probabilities) to get index of highest prob
         #    - Get emotion label: EMOTIONS[predicted_index]
         #    - Get confidence: probabilities[predicted_index]
-        #
+        predicted_index = np.argmax(probabilities)
+        emotion_label = EMOTIONS[predicted_index]
+        confidence = probabilities[predicted_index]
+
         # 5. Return (emotion_label, confidence)
-        #
+        return (emotion_label, confidence)
+
         # Error Handling:
         # - Wrap in try/except
         # - On any error, print warning and return ("Unknown", 0.0)

@@ -51,6 +51,16 @@ class FaceRecognizer:
         print("Face Recognition System - Initializing")
         print("="*70)
         print()
+
+        self.framesListForEmotions = []
+        self.counter = 0
+
+        self.emotion_model = EmotionModel()
+        print("✅ Emotion Model loaded successfully\n")
+        
+        # Test with random image (won't give meaningful results, just tests the pipeline)
+        self.test_img = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        self.emotion, self.confidence = self.emotion_model.predict(self.test_img)
         
         self.similarity_threshold = similarity_threshold
         
@@ -120,7 +130,7 @@ class FaceRecognizer:
         # - EmotionSmoother is imported from utils.emotion_smoother
         # - Use try/except to handle missing model file gracefully
         
-        raise NotImplementedError("TODO 21: Initialize emotion model and smoother")
+        #raise NotImplementedError("TODO 21: Initialize emotion model and smoother")
     
     def recognize_face(self, face_img):
         """
@@ -787,7 +797,9 @@ class FaceRecognizer:
                                             "name": name,
                                             "sim": sim,
                                             "ttl": 10,
-                                            "draw_box": None
+                                            "draw_box": None,
+                                            "recent_frames": [crop.copy()],
+                                            "frames_position": 1
                                         })
                                         next_id += 1
 
@@ -814,9 +826,18 @@ class FaceRecognizer:
 
                                 color = color_for_id(tr["id"])
                                 cv2.rectangle(frame, (dx, dy), (dx+dw, dy+dh), color, 2)
-                                label = f'ID {tr["id"]}: {tr["name"]} ({tr.get("sim", 0):.2f})'
+                                
+                                # Predict emotion using current frame's crop (every frame)
+                                emotion_label = ""
+                                current_crop = frame[dy:dy+dh, dx:dx+dw]
+                                if current_crop.size > 0:
+                                    emotion_label, emotion_conf = self.emotion_model.predict(current_crop)
+                                
+                                label = f'ID {tr["id"]}: {tr["name"]} ({tr.get("sim", 0):.2f}) | {emotion_label}'
                                 cv2.putText(frame, label, (dx, dy-10),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                                
+
 
                         frame_count += 1
                         if frame_count % 10 == 0:

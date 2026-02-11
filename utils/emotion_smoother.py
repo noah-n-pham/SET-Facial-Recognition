@@ -54,17 +54,17 @@ class EmotionSmoother:
         #
         # Steps:
         # 1. Store parameters:
-        #    - self.window_size = window_size
-        #    - self.num_classes = num_classes
+        self.window_size = window_size
+        self.num_classes = num_classes
         #
         # 2. Create the buffer:
         #    - Create a numpy array of zeros with shape (window_size, num_classes)
         #    - This will hold the last `window_size` probability vectors
         #    - Store as self.buffer
-        #
+        self.buffer = np.zeros((self.window_size,self.num_classes))
         # 3. Initialize position tracker:
-        #    - self.position = 0  (where to write next)
-        #    - self.count = 0     (how many entries we've added)
+        self.position = 0  #(where to write next)
+        self.count = 0     #(how many entries we've added)
         #
         # Why a circular buffer?
         # - Fixed memory usage regardless of how long the program runs
@@ -78,7 +78,7 @@ class EmotionSmoother:
         #   Add C:    [A,     B,     C    ]  position=0, count=3 (wrapped!)
         #   Add D:    [D,     B,     C    ]  position=1, count=3 (overwrote A)
         
-        raise NotImplementedError("TODO 18: Initialize circular buffer")
+        # raise NotImplementedError("TODO 18: Initialize circular buffer")
     
     def update(self, probabilities):
         """
@@ -92,29 +92,34 @@ class EmotionSmoother:
         # ======================================
         # Steps:
         # 1. Convert input to numpy array (in case it isn't already):
-        #    - probabilities = np.array(probabilities)
+        probabilities = np.array(probabilities)
         #
         # 2. Validate shape:
+        if len(probabilities) != self.num_classes:
+            print("Unequal lengths")
+            return
+
+
         #    - Check that len(probabilities) == self.num_classes
         #    - If not, print warning and return without updating
         #
         # 3. Write to buffer at current position:
-        #    - self.buffer[self.position] = probabilities
+        self.buffer[self.position] = probabilities
         #
         # 4. Update position (wrap around using modulo):
-        #    - self.position = (self.position + 1) % self.window_size
+        self.position = (self.position + 1) % self.window_size
         #    - This makes position cycle: 0, 1, 2, 0, 1, 2, ...
         #
         # 5. Update count (cap at window_size):
         #    - self.count = min(self.count + 1, self.window_size)
         #    - count tells us how many valid entries exist
-        #
+        self.count = min(self.count + 1, self.window_size)
         # Why modulo for position?
         # - When position reaches window_size, we want it to wrap to 0
         # - Example: window_size=3, position goes 0->1->2->0->1->2->...
         # - This is what makes it a "circular" buffer
         
-        raise NotImplementedError("TODO 19: Add new prediction to buffer")
+        # raise NotImplementedError("TODO 19: Add new prediction to buffer")
     
     def get_smoothed(self):
         """
@@ -129,6 +134,8 @@ class EmotionSmoother:
         # =======================================
         # Steps:
         # 1. Handle empty buffer case:
+        if self.count == 0:
+            return np.ones(self.num_classes) / self.num_classes
         #    - If self.count == 0, return uniform distribution
         #    - Uniform: np.ones(self.num_classes) / self.num_classes
         #    - This means "equal probability for all emotions"
@@ -137,12 +144,13 @@ class EmotionSmoother:
         #    - Only average the entries we've actually filled
         #    - valid_entries = self.buffer[:self.count]
         #    - (If count < window_size, we haven't filled the buffer yet)
-        #
+        valid_entries = self.buffer[:self.count]            
         # 3. Compute mean across entries:
         #    - Use np.mean(valid_entries, axis=0)
         #    - axis=0 means average across rows (frames)
         #    - Result shape: (num_classes,)
-        #
+        return np.mean(valid_entries,axis=0)
+        
         # 4. Return the averaged probabilities
         #
         # Note: The averaged probabilities might not sum to exactly 1.0
@@ -154,7 +162,7 @@ class EmotionSmoother:
         # - "90% happy + 90% happy + 50% happy" → different from
         #   "90% happy + 90% happy + 90% sad" (tie in voting, clear win in avg)
         
-        raise NotImplementedError("TODO 20: Return averaged probabilities")
+        # raise NotImplementedError("TODO 20: Return averaged probabilities")
     
     def get_emotion(self, emotions_list):
         """

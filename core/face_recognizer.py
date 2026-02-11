@@ -112,12 +112,13 @@ class FaceRecognizer:
         # 1. Create EmotionModel instance:
         #    - model_path='assets/enet_b0_8.onnx'
         #    - Store as self.emotion_model
-        #
+        
+        self.emotion_model = EmotionModel("assets/enet_b0_8.onnx")
         # 2. Create EmotionSmoother instance:
         #    - window_size=5 (average over 5 frames)
         #    - num_classes=8 (8 emotions)
         #    - Store as self.emotion_smoother
-        #
+        self.emotion_smoother = EmotionSmoother(5, 8)
         # 3. Print confirmation message
         #
         # Why smoothing?
@@ -183,54 +184,96 @@ class FaceRecognizer:
     
     def recognize_emotion(self, face_img):
         """
-        Recognize emotion from face image.
-        
-        This runs IN PARALLEL with recognize_face() - same input, different output.
+        Recognize emotion from face image with temporal smoothing.
         
         Args:
-            face_img: Cropped face image (BGR) - same as recognize_face input
+            face_img: Cropped face image (BGR)
         
         Returns:
-            (emotion, confidence): Tuple of emotion label and probability
+            (emotion_label, confidence): Tuple of predicted emotion and confidence
         """
+    
+    # TODO 22: Implement emotion recognition with temporal smoothing
+    # ==============================================================
+    # 
+    # GOAL: Get emotion probabilities, smooth them over time, return result
+    #
+    # Steps:
+    # ------
+    # 1. Preprocess the face image for the model:
+        try:
+            input_tensor = self.emotion_model.preprocess(face_img)
+    #
+    # 2. Run ONNX inference to get raw scores (logits):
+    #    ONNX Runtime API: 
+    #    - output_names: None (means "get all outputs")
+    #    - input_feed: Dictionary mapping input name to tensor
+    #    
+            outputs = self.emotion_model.session.run(
+            None,
+            {self.emotion_model.input_name: input_tensor}
+            )
+            logits = outputs[0][0]  # Extract: outputs[0] = first output (shape [1,8])
+    #                            #          [0] = first batch item (shape [8])
+    #
+    # 3. Convert logits to probabilities using softmax:
+            probs = self.emotion_model.softmax(logits)
+    #    Now probs is shape [8] with values summing to 1.0
+    #
+    # 4. Update the smoother with this frame's probabilities:
+            self.emotion_smoother.update(probs)
+    #    The smoother stores the last N frames in a circular buffer
+    #
+    # 5. Get the smoothed prediction:
+            emotion_label, confidence = self.emotion_smoother.get_emotion(EMOTIONS)
+    #    This averages probabilities across buffered frames and returns
+    #    the emotion with highest average probability
+    #
+    # 6. Return the smoothed result:
+            return (emotion_label, confidence)
         
-        # TODO 22: Implement emotion recognition with smoothing
-        # ======================================================
-        # Steps:
-        # 1. Get raw prediction from emotion model:
-        #    - Call self.emotion_model.predict(face_img)
-        #    - This returns (emotion_label, confidence)
-        #    - But we need the full probability vector for smoothing!
-        #
-        # 2. For proper smoothing, we need probabilities:
-        #    - Preprocess: input_tensor = self.emotion_model.preprocess(face_img)
-        #    - Run inference: logits = self.emotion_model.session.run(...)
-        #    - Apply softmax: probs = self.emotion_model.softmax(logits)
-        #
-        # 3. Update smoother with probabilities:
-        #    - Call self.emotion_smoother.update(probs)
-        #
-        # 4. Get smoothed prediction:
-        #    - Call self.emotion_smoother.get_emotion(EMOTIONS)
-        #    - This returns (emotion_label, smoothed_confidence)
-        #
-        # 5. Return the smoothed result
-        #
-        # Error handling:
-        # - Wrap in try/except
-        # - On error, return ("Unknown", 0.0)
-        #
-        # Why smooth here instead of in EmotionModel?
-        # - Smoothing is a TEMPORAL operation (across frames)
-        # - The model only sees one frame at a time
-        # - The recognizer sees the stream of frames
-        #
-        # Alternative simpler approach (if above is too complex):
-        # - Just call self.emotion_model.predict(face_img)
-        # - Skip smoothing for now, add it later
-        # - This still works but may flicker more
-        
-        raise NotImplementedError("TODO 22: Implement emotion recognition")
+        except:
+            print(f"Warning: Emotion recognition failed:")
+            return ("Unknown", 0.0)
+    
+    #
+    # Error Handling:
+    # ---------------
+    # Wrap steps 1-6 in try/except:
+    #   try:
+    #       ... your code ...
+    #   except Exception as e:
+    #       print(f"Warning: Emotion recognition failed: {e}")
+    #       return ("Unknown", 0.0)
+    #
+    # Why this approach?
+    # ------------------
+    # - We CANNOT just call predict() because it only returns the winning label
+    # - Smoothing needs ALL 8 probabilities to average across frames
+    # - Example: Frame 1 is 60% Happy, Frame 2 is 55% Neutral
+    #   - Without smoothing: flickers between "Happy" and "Neutral"
+    #   - With smoothing: averages to ~57.5% Happy (more stable)
+    #
+    # Reference:
+    # ----------
+    # See emotion_model.py lines 259-276 for how predict() does inference
+    # (you're doing the same thing, but keeping probabilities instead of
+    #  picking the winner immediately)
+    #
+    # Hints:
+    # ------
+    # - self.emotion_model has methods: preprocess(), softmax()
+    # - self.emotion_model has attributes: session, input_name
+    # - self.emotion_smoother has methods: update(), get_emotion()
+    # - EMOTIONS is imported at the top: from models.emotion_model import EMOTIONS
+    #
+    # Common mistakes:
+    # ----------------
+    # ❌ session.run(input_tensor) - Wrong! Needs dict format
+    # ❌ outputs[0] - Wrong! Still has batch dimension, need outputs[0][0]
+    # ❌ Using predict() - Won't work! It doesn't return probabilities
+    
+    #raise NotImplementedError("TODO 22: Implement emotion recognition with smoothing")
     
     def run_webcam0(self, camera_id=0):
         #Run real-time recognition on webcam. Press ESC to exit.
@@ -272,11 +315,12 @@ class FaceRecognizer:
                     # =================================================
                     # Steps:
                     # 1. Call emotion recognition:
-                    #    - emotion, emotion_conf = self.recognize_emotion(cropped_face)
+                    emotion, emotion_conf = self.recognize_emotion(cropped_face)
                     #
                     # 2. Update the label to show both identity and emotion:
                     #    - Old: label = f'{name} ({similarity:.2f})'
-                    #    - New: label = f'{name} | {emotion}'
+                    
+                    label = f'{name} | {emotion}'
                     #    - Or with confidence: f'{name} ({similarity:.2f}) | {emotion} ({emotion_conf:.0%})'
                     #
                     # 3. Optional: Draw emotion on second line

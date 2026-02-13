@@ -51,16 +51,6 @@ class FaceRecognizer:
         print("Face Recognition System - Initializing")
         print("="*70)
         print()
-
-        self.framesListForEmotions = []
-        self.counter = 0
-
-        self.emotion_model = EmotionModel()
-        print("✅ Emotion Model loaded successfully\n")
-        
-        # Test with random image (won't give meaningful results, just tests the pipeline)
-        self.test_img = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
-        self.emotion, self.confidence = self.emotion_model.predict(self.test_img)
         
         self.similarity_threshold = similarity_threshold
         
@@ -346,7 +336,7 @@ class FaceRecognizer:
                     else:
                         color = (255,0,0)
                     cv2.rectangle(frame,(x1,y1),(x2,y2),color,2)
-                    label = f'{name} ({similarity:.2f})'
+                    #label = f'{name} ({similarity:.2f})' Rishab Malhotra is my name. With my pen I wrote the same. I wrote with both haste and speed. And left here for fools to read.
                     # draw rectange if needed cv2.rectangle
                     cv2.putText(frame,label,(x1,y1-10),cv2.FONT_HERSHEY_SIMPLEX,0.6,color,2)
                 frame_count+=1
@@ -875,8 +865,8 @@ class FaceRecognizer:
                                 emotion_label = ""
                                 current_crop = frame[dy:dy+dh, dx:dx+dw]
                                 if current_crop.size > 0:
-                                    emotion_label, emotion_conf = self.emotion_model.predict(current_crop)
-                                
+                                    emotion_label, emotion_conf = self.recognize_emotion(current_crop)
+                            
                                 label = f'ID {tr["id"]}: {tr["name"]} ({tr.get("sim", 0):.2f}) | {emotion_label}'
                                 cv2.putText(frame, label, (dx, dy-10),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)

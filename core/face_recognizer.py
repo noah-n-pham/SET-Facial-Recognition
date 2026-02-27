@@ -1,6 +1,7 @@
 """
 Real-Time Face Recognition - Phase 3
 + Emotion Recognition Integration - Semester 2, Phase 3
++ ROS 2 Integration - Robot Communication
 
 Complete recognition system that:
 1. Detects faces in webcam frames
@@ -8,9 +9,11 @@ Complete recognition system that:
 3. Compares with reference database (Identity - Semester 1)
 4. Classifies emotion (Emotion - Semester 2)
 5. Displays results with bounding boxes
+6. Publishes results via ROS 2 (ROS Integration)
 
 Semester 1 TODOs: 11-13
 Semester 2 TODOs: 21-23
+ROS 2 TODOs: 24-27
 """
 
 import os
@@ -21,6 +24,28 @@ import numpy as np
 from pathlib import Path
 import sys
 import time
+
+# ============================================================================
+# ROS 2: Robot Communication Imports
+# ============================================================================
+
+# TODO 24: Import ROS 2 libraries
+# ================================
+# Steps:
+# 1. Import rclpy (the ROS 2 Python client library)
+# 2. Import Node from rclpy.node (to create a node object)
+# 3. Import String from std_msgs.msg (the message type for text)
+#
+# These are the standard imports every ROS 2 Python node needs.
+# rclpy is to ROS 2 what rospy was to ROS 1.
+#
+# Hints:
+# - import rclpy
+# - from rclpy.node import Node
+# - from std_msgs.msg import String
+
+# (uncomment and complete the imports above)
+# raise NotImplementedError("TODO 24: Import ROS 2 libraries")
 
 sys.path.append('.')
 from models.face_model import FaceEmbeddingModel
@@ -37,7 +62,8 @@ class FaceRecognizer:
     def __init__(self, 
                  reference_path='models/reference_embeddings.npy',
                  labels_path='models/label_names.txt',
-                 similarity_threshold=0.6):
+                 similarity_threshold=0.6,
+                 ros_node=None):
         """
         Initialize recognition system.
         
@@ -45,6 +71,7 @@ class FaceRecognizer:
             reference_path: Path to reference embeddings
             labels_path: Path to label names
             similarity_threshold: Minimum similarity to recognize [0-1]
+            ros_node: (Optional) ROS 2 Node object for publishing results
         """
         
         print("="*70)
@@ -122,6 +149,38 @@ class FaceRecognizer:
         # - Use try/except to handle missing model file gracefully
         
         #raise NotImplementedError("TODO 21: Initialize emotion model and smoother")
+        
+        # ====================================================================
+        # ROS 2: Robot Communication Setup
+        # ====================================================================
+        
+        # TODO 25: Create ROS 2 publishers
+        # =================================
+        # Steps:
+        # 1. Store the node: self.ros_node = ros_node
+        #
+        # 2. If ros_node is not None, create 3 publishers:
+        #    - self.identity_pub: publishes to '/face/identity' (String, queue_size 10)
+        #    - self.emotion_pub:  publishes to '/face/emotion'  (String, queue_size 10)
+        #    - self.position_pub: publishes to '/face/position' (String, queue_size 10)
+        #
+        # Why 3 separate topics?
+        # - Identity:  other nodes decide behavior based on WHO they see
+        # - Emotion:   other nodes react based on HOW the person feels
+        # - Position:  navigation node needs WHERE the face is to turn toward it
+        #
+        # Why queue_size=10?
+        # - Buffers messages if a subscriber is slow to process them
+        # - Prevents message loss during brief slowdowns
+        #
+        # Hints:
+        # - Publisher creation: node.create_publisher(String, '/topic/name', queue_size)
+        # - Guard with: if self.ros_node:
+        # - String is the message type imported in TODO 24
+        
+        self.ros_node = ros_node
+        if self.ros_node:
+            raise NotImplementedError("TODO 25: Create ROS 2 publishers")
     
     def recognize_face(self, face_img):
         """
@@ -871,6 +930,44 @@ class FaceRecognizer:
                                 cv2.putText(frame, label, (dx, dy-10),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
                                 
+                                # ============================================
+                                # ROS 2: Publish results to robot
+                                # ============================================
+                                
+                                # TODO 26: Publish results to ROS 2 topics
+                                # =========================================
+                                # Steps:
+                                # 1. Guard clause: only publish if self.ros_node exists
+                                #
+                                # 2. Publish identity:
+                                #    - Create a String() message
+                                #    - Set msg.data = f'{tr["name"]}|{tr.get("sim", 0):.2f}'
+                                #    - Call self.identity_pub.publish(msg)
+                                #
+                                # 3. Publish emotion:
+                                #    - Create a NEW String() message
+                                #    - Set msg.data = emotion_label
+                                #    - Call self.emotion_pub.publish(msg)
+                                #
+                                # 4. Publish position (face center + size):
+                                #    - Create a NEW String() message
+                                #    - Compute center: cx = dx + dw // 2, cy = dy + dh // 2
+                                #    - Set msg.data = f'{cx}|{cy}|{dw}|{dh}'
+                                #    - Call self.position_pub.publish(msg)
+                                #
+                                # Why here? This is the point where all results
+                                # (identity, emotion, position) are ready for one
+                                # tracked face. cv2.putText sends it to the screen;
+                                # publish() sends it to the rest of the robot.
+                                #
+                                # Hints:
+                                # - Use a fresh String() for each message
+                                # - Position center lets the nav node decide
+                                #   "turn left" or "turn right" based on where
+                                #   the face is relative to frame center
+                                
+                                if self.ros_node:
+                                    raise NotImplementedError("TODO 26: Publish results to ROS 2 topics")
 
 
                         frame_count += 1
@@ -901,6 +998,39 @@ class FaceRecognizer:
 
 # Run recognizer
 if __name__ == '__main__':
+    
+    # ========================================================================
+    # TODO 27: Initialize ROS 2 and create node
+    # ========================================================================
+    # Steps:
+    # 1. Call rclpy.init() to connect to the ROS 2 system
+    #    - This must happen BEFORE creating any Node or Publisher
+    #    - Like logging into the message board
+    #
+    # 2. Create a node: ros_node = Node('face_recognition_node')
+    #    - This registers your program with ROS 2
+    #    - Other nodes see this name when running: ros2 node list
+    #
+    # 3. Pass ros_node to FaceRecognizer:
+    #    - Add ros_node=ros_node to the constructor call below
+    #    - This enables the publishers created in TODO 25
+    #
+    # 4. Add a finally block for cleanup:
+    #    - ros_node.destroy_node()  (unregister from ROS)
+    #    - rclpy.shutdown()         (disconnect from ROS system)
+    #    - Use finally so cleanup runs even if the program crashes
+    #
+    # Why init() first?
+    # - rclpy.init() creates the ROS context that Node and Publisher depend on
+    # - Without it, Node('...') will fail with a "context not initialized" error
+    #
+    # Hints:
+    # - rclpy.init() takes no arguments for basic usage
+    # - The finally block goes after your existing except blocks:
+    #   try: ... except: ... finally: cleanup
+    
+    raise NotImplementedError("TODO 27: Initialize ROS 2 and create node")
+    
     reference_path = Path('models/reference_embeddings.npy')
     labels_path = Path('models/label_names.txt')
     

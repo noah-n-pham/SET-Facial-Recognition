@@ -43,7 +43,9 @@ import time
 # - import rclpy
 # - from rclpy.node import Node
 # - from std_msgs.msg import String
-
+import rclpy
+from rclpy.node import Node 
+from std_msgs.msg import String
 # (uncomment and complete the imports above)
 # raise NotImplementedError("TODO 24: Import ROS 2 libraries")
 
@@ -158,12 +160,16 @@ class FaceRecognizer:
         # =================================
         # Steps:
         # 1. Store the node: self.ros_node = ros_node
-        #
+        self.ros_node = ros_node
         # 2. If ros_node is not None, create 3 publishers:
         #    - self.identity_pub: publishes to '/face/identity' (String, queue_size 10)
         #    - self.emotion_pub:  publishes to '/face/emotion'  (String, queue_size 10)
         #    - self.position_pub: publishes to '/face/position' (String, queue_size 10)
-        #
+        if ros_node is not None:
+            self.identity_pub = ros_node.create_publisher(String,'/face/identity',10)
+            self.emotion_pub = ros_node.create_publisher(String,'/face/emotion',10)
+            self.position_pub = ros_node.create_publisher(String,'/face/position',10)
+
         # Why 3 separate topics?
         # - Identity:  other nodes decide behavior based on WHO they see
         # - Emotion:   other nodes react based on HOW the person feels
@@ -178,9 +184,9 @@ class FaceRecognizer:
         # - Guard with: if self.ros_node:
         # - String is the message type imported in TODO 24
         
-        self.ros_node = ros_node
-        if self.ros_node:
-            raise NotImplementedError("TODO 25: Create ROS 2 publishers")
+        
+        # if self.ros_node:
+        #     raise NotImplementedError("TODO 25: Create ROS 2 publishers")
     
     def recognize_face(self, face_img):
         """
@@ -938,23 +944,31 @@ class FaceRecognizer:
                                 # =========================================
                                 # Steps:
                                 # 1. Guard clause: only publish if self.ros_node exists
-                                #
+                                if self.ros_node:
                                 # 2. Publish identity:
                                 #    - Create a String() message
                                 #    - Set msg.data = f'{tr["name"]}|{tr.get("sim", 0):.2f}'
                                 #    - Call self.identity_pub.publish(msg)
-                                #
+                                    idMsg = String()
+                                    idMsg.data = f'{tr["name"]}|{tr.get("sim", 0):.2f}'
+                                    self.identity_pub.publish(idMsg)
                                 # 3. Publish emotion:
                                 #    - Create a NEW String() message
                                 #    - Set msg.data = emotion_label
                                 #    - Call self.emotion_pub.publish(msg)
-                                #
+                                    emotionMsg = String()
+                                    emotionMsg.data = emotion_label
+                                    self.emotion_pub.publish(emotionMsg)
                                 # 4. Publish position (face center + size):
                                 #    - Create a NEW String() message
                                 #    - Compute center: cx = dx + dw // 2, cy = dy + dh // 2
                                 #    - Set msg.data = f'{cx}|{cy}|{dw}|{dh}'
                                 #    - Call self.position_pub.publish(msg)
-                                #
+                                    posMsg = String()
+                                    cx = dx + dw // 2
+                                    cy = dy + dh // 2
+                                    posMsg.data = f'{cx}|{cy}|{dw}|{dh}'
+                                    self.position_pub.publish(posMsg)
                                 # Why here? This is the point where all results
                                 # (identity, emotion, position) are ready for one
                                 # tracked face. cv2.putText sends it to the screen;
@@ -966,8 +980,8 @@ class FaceRecognizer:
                                 #   "turn left" or "turn right" based on where
                                 #   the face is relative to frame center
                                 
-                                if self.ros_node:
-                                    raise NotImplementedError("TODO 26: Publish results to ROS 2 topics")
+                                # if self.ros_node:
+                                #     raise NotImplementedError("TODO 26: Publish results to ROS 2 topics")
 
 
                         frame_count += 1
@@ -1006,20 +1020,20 @@ if __name__ == '__main__':
     # 1. Call rclpy.init() to connect to the ROS 2 system
     #    - This must happen BEFORE creating any Node or Publisher
     #    - Like logging into the message board
-    #
+    try:
+        rclpy.init()
     # 2. Create a node: ros_node = Node('face_recognition_node')
     #    - This registers your program with ROS 2
     #    - Other nodes see this name when running: ros2 node list
-    #
+        ros_node = Node('face_recognition_node')
     # 3. Pass ros_node to FaceRecognizer:
     #    - Add ros_node=ros_node to the constructor call below
     #    - This enables the publishers created in TODO 25
-    #
-    # 4. Add a finally block for cleanup:
-    #    - ros_node.destroy_node()  (unregister from ROS)
-    #    - rclpy.shutdown()         (disconnect from ROS system)
-    #    - Use finally so cleanup runs even if the program crashes
-    #
+    
+    except:
+        raise Exception("ros_node initialization error")
+    
+    
     # Why init() first?
     # - rclpy.init() creates the ROS context that Node and Publisher depend on
     # - Without it, Node('...') will fail with a "context not initialized" error
@@ -1029,7 +1043,7 @@ if __name__ == '__main__':
     # - The finally block goes after your existing except blocks:
     #   try: ... except: ... finally: cleanup
     
-    raise NotImplementedError("TODO 27: Initialize ROS 2 and create node")
+    # raise NotImplementedError("TODO 27: Initialize ROS 2 and create node")
     
     reference_path = Path('models/reference_embeddings.npy')
     labels_path = Path('models/label_names.txt')
@@ -1043,8 +1057,10 @@ if __name__ == '__main__':
         recognizer = FaceRecognizer(
             reference_path=str(reference_path),
             labels_path=str(labels_path),
-            similarity_threshold=0.6
+            similarity_threshold=0.6,
+            ros_node=ros_node
         )
+        
         # camera_id=0 is default camera (may be iPhone with Continuity Camera)
         # camera_id=1 is typically built-in webcam on macOS
         # Change to camera_id=1 if iPhone is activating instead of computer webcam
@@ -1054,3 +1070,5 @@ if __name__ == '__main__':
         print(f"\n❌ {e}")
     except Exception as e:
         print(f"\n❌ Error: {e}")
+
+    
